@@ -4,7 +4,7 @@
 
 EDA_main：在linux運行統合程式區域
 
-https://github.com/tumark0305/EDA_assignment/tree/EDA_main
+[https://github.com/tumark0305/EDA_assignment/tree/EDA_main](https://github.com/tumark0305/EDA_assignment/tree/master)
 
 EDA_local：在Win11運行主程式架構
 
