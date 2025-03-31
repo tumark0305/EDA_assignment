@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) {
 	sort.prt(sort.matA);
 	sort.prt(cuda_main(sort.matA));
     if (get_parameters(argc, argv)) {
-        return 1;
+        return 1; 
     }
     input_file file(input_file_name);
     plot_info plot(file.data_pack, component_size);
