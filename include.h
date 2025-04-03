@@ -1,17 +1,23 @@
+/*test area*/
+#ifdef _WIN32
+#include <windows.h>
+#define usleep(x) Sleep((x) / 1000)
+#else
+#include <unistd.h>
+#endif
+
 #ifndef INCLUDE_H
 #define INCLUDE_H
 
 #include <iostream>
 #include <fstream>
 #include <limits.h> 
-#include <unistd.h>
 #include <cstring> 
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <sstream>
 #include <array>
-#include <algorithm> 
 using namespace std;
 extern string input_file_name;
 extern string output_file_name;
@@ -24,7 +30,7 @@ struct header_info {
     string DESIGN = "None";
     unsigned int UNITS_DISTANCE_MICRONS = 0;
     string PROPERTYDEFINITIONS = "None";
-    int DIEAREA[2][2];
+    int DIEAREA[2][2] = { {0,0},{0,0} };
 };
 struct component_info {
     string name = "None";
@@ -39,7 +45,7 @@ struct specialnet_info {
     string layer = "None";
     int width = 0;
     int coordinate[2] = { 0, 0 }; //x,y
-    int length[2] = { 0,0 }; //x,y
+    int indirect_coordinate[2] = { 0,0 }; //x,y
 };
 struct data_info {
     header_info header;
@@ -47,12 +53,12 @@ struct data_info {
     vector< specialnet_info> specialnet;
 };
 
-class os {
+class os_info {
 private:
 
 public:
     string path;
-    os();
+    os_info();
 };
 
 class plot_info {
@@ -67,7 +73,7 @@ public:
     void write(string file_name);
 };
 
-class input_file {
+class input_file_final {
 private:
     unsigned int line_counter = 0;
     unsigned int components_len = 0;
@@ -75,7 +81,7 @@ private:
     string line_tag = "OFF";
     string name;
     string get_bykeyword(string word, char key);
-    string buffer = "Dirty here--------";
+    string buffer = "Uncleaned buffer";
     bool PROPERTYDEFINITIONS = false;
     header_info header;
     vector<component_info> component;
@@ -88,6 +94,6 @@ private:
 public:
     string head_text = "", components_text = "", specialnets_text = "";
     static data_info data_pack;
-    input_file(string file_name);
+    input_file_final(string file_name);
 };
 #endif
