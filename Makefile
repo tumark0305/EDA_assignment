@@ -1,6 +1,6 @@
 CC=g++
 LDFLAGS=-std=c++11 -O3 -g -lm
-SOURCES=*.cpp
+SOURCES=*.cpp modules/*.cpp
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=genPlot
 INCLUDES=*.h

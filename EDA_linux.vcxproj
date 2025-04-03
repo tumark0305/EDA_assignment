@@ -41,10 +41,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include.h" />
+    <ClInclude Include="modules\final_file.h" />
+    <ClInclude Include="modules\os_info.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="macro.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="modules\final_file.cpp" />
+    <ClCompile Include="modules\os_info.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{e4c5edb3-eecb-4cee-a834-550e093bc8c9}</ProjectGuid>
