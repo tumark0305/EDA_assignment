@@ -3,8 +3,8 @@
 
 #ifndef INCLUDE_H
 #define INCLUDE_H
-#include "modules\os_info.h"
-#include "modules\final_file.h"
+#include "modules/os_info.h"
+#include "modules/final_file.h"
 
 #include <iostream>
 #include <fstream>
