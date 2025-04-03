@@ -13,9 +13,7 @@ os_info::os_info() {
 #endif
     path = buffer;
 }
-string input_file_name = "CS12x12.def";
-string output_file_name = "output.gp";
-unsigned int component_size[2] = { 7100, 6600 };
+
 bool get_parameters(int argc, char* argv[]) {
     if (argc != 5) {
         cerr << "Usage: " << argv[0] << " <MSSC width> <MSSC height> <input file> <output file>" << endl;
