@@ -128,9 +128,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="case1.def" />
+    <None Include="case2.def" />
+    <None Include="case3.def" />
+    <None Include="case4.def" />
     <None Include="CS12x12.def" />
     <None Include="CS8x8.def" />
     <None Include="Makefile" />
+    <None Include="super1.def" />
+    <None Include="super2.def" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include.h" />

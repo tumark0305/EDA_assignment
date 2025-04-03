@@ -22,6 +22,24 @@
       <Filter>來源檔案</Filter>
     </None>
     <None Include="Makefile" />
+    <None Include="case1.def">
+      <Filter>來源檔案</Filter>
+    </None>
+    <None Include="case2.def">
+      <Filter>來源檔案</Filter>
+    </None>
+    <None Include="case3.def">
+      <Filter>來源檔案</Filter>
+    </None>
+    <None Include="case4.def">
+      <Filter>來源檔案</Filter>
+    </None>
+    <None Include="super1.def">
+      <Filter>來源檔案</Filter>
+    </None>
+    <None Include="super2.def">
+      <Filter>來源檔案</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include.h">

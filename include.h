@@ -1,3 +1,4 @@
+/*test area*/
 #ifdef _WIN32
 #include <windows.h>
 #define usleep(x) Sleep((x) / 1000)
@@ -11,7 +12,6 @@
 #include <iostream>
 #include <fstream>
 #include <limits.h> 
-//#include <unistd.h>
 #include <cstring> 
 #include <string>
 #include <vector>
@@ -30,7 +30,7 @@ struct header_info {
     string DESIGN = "None";
     unsigned int UNITS_DISTANCE_MICRONS = 0;
     string PROPERTYDEFINITIONS = "None";
-    int DIEAREA[2][2];
+    int DIEAREA[2][2] = { {0,0},{0,0} };
 };
 struct component_info {
     string name = "None";
@@ -73,7 +73,7 @@ public:
     void write(string file_name);
 };
 
-class input_file {
+class input_file_final {
 private:
     unsigned int line_counter = 0;
     unsigned int components_len = 0;
@@ -94,6 +94,6 @@ private:
 public:
     string head_text = "", components_text = "", specialnets_text = "";
     static data_info data_pack;
-    input_file(string file_name);
+    input_file_final(string file_name);
 };
 #endif

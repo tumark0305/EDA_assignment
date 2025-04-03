@@ -1,4 +1,5 @@
 #include "include.h"
+
 os_info::os_info() {
     char buffer[1024];
 #ifdef _WIN32
@@ -27,8 +28,8 @@ bool get_parameters(int argc, char* argv[]) {
         return false;
     }
 }
-data_info input_file::data_pack; //all acessable
-input_file::input_file(string file_name) : name(file_name) {
+data_info input_file_final::data_pack; //all acessable
+input_file_final::input_file_final(string file_name) : name(file_name) {
     os_info current;
     string input_path = current.path + "/" + file_name;
     string line;
@@ -38,7 +39,14 @@ input_file::input_file(string file_name) : name(file_name) {
     }
 
     while (getline(file, line)) {
-        line.erase(remove(line.begin(), line.end(), '\r'), line.end());
+        for (auto it = line.begin(); it != line.end(); ) {
+            if (*it == '\r') {
+                it = line.erase(it);
+            }
+            else {
+                ++it;
+            }
+        }
         input_line(line);
     }
     file.close();
@@ -46,7 +54,7 @@ input_file::input_file(string file_name) : name(file_name) {
     data_pack.component = component;
     data_pack.specialnet = specialnet;
 }
-void input_file::input_line(string new_line) {
+void input_file_final::input_line(string new_line) {
     if (line_tag == "OFF" && new_line.find("VERSION") != string::npos) {
         line_tag = "head";
         head_text += "\n" + new_line;
@@ -93,7 +101,7 @@ void input_file::input_line(string new_line) {
         }
     }
 }
-void input_file::put_header(string new_line) {
+void input_file_final::put_header(string new_line) {
     if (new_line.find("VERSION") != string::npos) {
         header.VERSION = get_bykeyword(new_line, ' ');
     }
@@ -146,7 +154,7 @@ void input_file::put_header(string new_line) {
     }
     //return header;;
 }
-void input_file::put_component(string new_line) {
+void input_file_final::put_component(string new_line) {
 
     component_info _info;
     string  _coordinate_text;
@@ -178,7 +186,7 @@ void input_file::put_component(string new_line) {
     _info.coordinate[1] = stoi(_coordinate_text.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1));
     component.push_back(_info);
 }
-void input_file::put_specialnet(string new_line) {
+void input_file_final::put_specialnet(string new_line) {
     specialnet_info _info;
     string  _coordinate_text, _indirect_coordinate_text;
     size_t space_pos1 = 0;
@@ -226,7 +234,7 @@ void input_file::put_specialnet(string new_line) {
     }
     specialnet.push_back(_info);
 }
-string input_file::get_bykeyword(string word, char key) {
+string input_file_final::get_bykeyword(string word, char key) {
     string output = "not find";
     size_t space_pos1 = word.rfind(key);
     size_t space_pos0 = word.rfind(key, space_pos1 - 1);
