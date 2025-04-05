@@ -1,5 +1,6 @@
 #ifndef FINAL_FILE_H
 #define FINAL_FILE_H
+#include "global_variable.h"
 #include "os_info.h"
 #include <iostream>
 #include <fstream>
@@ -11,35 +12,6 @@
 #include <sstream>
 #include <array>
 using namespace std;
-struct header_info {
-    string VERSION = "None";
-    string DIVIDERCHAR = "None";
-    string BUSBITCHARS = "None";
-    string DESIGN = "None";
-    unsigned int UNITS_DISTANCE_MICRONS = 0;
-    string PROPERTYDEFINITIONS = "None";
-    int DIEAREA[2][2] = { {0,0},{0,0} };
-};
-struct component_info {
-    string name = "None";
-    string tag = "None";
-    string place = "None";
-    int coordinate[2] = { 0, 0 }; //x,y
-    string notation = "None";//N=left bottom
-};
-struct specialnet_info {
-    string name = "None";
-    string rout = "None";
-    string layer = "None";
-    int width = 0;
-    int coordinate[2] = { 0, 0 }; //x,y
-    int indirect_coordinate[2] = { 0,0 }; //x,y
-};
-struct data_info {
-    header_info header;
-    vector<component_info> component;
-    vector< specialnet_info> specialnet;
-};
 class final_file {
 private:
     unsigned int line_counter = 0;

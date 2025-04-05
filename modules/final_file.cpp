@@ -136,10 +136,10 @@ void final_file::put_component(string new_line) {
     size_t space_pos0 = 0;
     space_pos0 = new_line.find(" ", space_pos1);
     space_pos1 = new_line.find(" ", space_pos0 + 1);
-    _info.name = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+    _info.inst_name = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
     space_pos0 = new_line.find(" ", space_pos1);
     space_pos1 = new_line.find(" ", space_pos0 + 1);
-    _info.tag = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+    _info.macro_name = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
     space_pos0 = new_line.find(" ", space_pos1 + 2);
     space_pos1 = new_line.find(" ", space_pos0 + 1);
     _info.place = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
@@ -148,7 +148,7 @@ void final_file::put_component(string new_line) {
     _coordinate_text = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
     space_pos0 = new_line.find(" ", space_pos1);
     space_pos1 = new_line.find(" ", space_pos0 + 1);
-    _info.notation = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+    _info.orientation = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
     space_pos1 = 0;
     space_pos0 = _coordinate_text.find(" ", space_pos1);
     space_pos1 = _coordinate_text.find(" ", space_pos0 + 1);

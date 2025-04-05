@@ -3,8 +3,10 @@
 
 #ifndef INCLUDE_H
 #define INCLUDE_H
+#include "modules/global_variable.h"
 #include "modules/os_info.h"
 #include "modules/final_file.h"
+#include "modules/Legalization_file.h"
 
 #include <iostream>
 #include <fstream>
@@ -32,6 +34,4 @@ public:
     void prt();
     void write(string file_name);
 };
-
-
 #endif

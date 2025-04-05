@@ -35,7 +35,7 @@ string plot_info::convert_plot() {
         output += "set object " + to_string(tag_counter) + " rect from ";
         output += to_string(data.component[component_index].coordinate[0]) + "," + to_string(data.component[component_index].coordinate[1]) + " to ";
         output += to_string(data.component[component_index].coordinate[0] + component_size[0]) + "," + to_string(data.component[component_index].coordinate[1] + component_size[1]) + " lw 1 fs solid fc rgb \"#c080ff\"\n";
-        output += "set label \"" + data.component[component_index].tag + "\" at ";
+        output += "set label \"" + data.component[component_index].macro_name + "\" at ";
         output += to_string(data.component[component_index].coordinate[0] + name_offset[0]) + "," + to_string(data.component[component_index].coordinate[1] + name_offset[1]) + " center\n";
         tag_counter++;
     }

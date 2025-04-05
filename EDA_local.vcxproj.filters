@@ -51,6 +51,12 @@
     <ClInclude Include="modules\os_info.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="modules\Legalization_file.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\global_variable.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="macro.cpp">
@@ -63,6 +69,9 @@
       <Filter>來源檔案</Filter>
     </ClCompile>
     <ClCompile Include="modules\os_info.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\Legalization_file.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
   </ItemGroup>
