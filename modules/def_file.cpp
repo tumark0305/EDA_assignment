@@ -1,10 +1,10 @@
-#include "final_file.h"
-data_info final_file::data_pack; //all acessable
-final_file::final_file() {
+#include "def_file.h"
+data_info def_file::data_pack; //all acessable
+def_file::def_file() {
     os_info current;
     path = current.path;
 }
-void final_file::read_fromfile(string file_name) {
+void def_file::read_fromfile(string file_name) {
     string input_path = path + "/" + file_name;
     string line;
     ifstream file(input_path);
@@ -25,11 +25,15 @@ void final_file::read_fromfile(string file_name) {
     }
     file.close();
     data_pack.header = header;
+    data_pack.command = command;
     data_pack.component = component;
     data_pack.specialnet = specialnet;
 }
-void final_file::input_line(string new_line) {
-    if (line_tag == "OFF" && new_line.find("VERSION") != string::npos) {
+void def_file::input_line(string new_line) {
+    if (new_line.find("ROW") != string::npos) {
+        put_command(new_line);
+    }
+    else if (line_tag == "OFF" && new_line.find("VERSION") != string::npos) {
         line_tag = "head";
         head_text += "\n" + new_line;
         put_header(new_line);
@@ -75,7 +79,7 @@ void final_file::input_line(string new_line) {
         }
     }
 }
-void final_file::put_header(string new_line) {
+void def_file::put_header(string new_line) {
     if (new_line.find("VERSION") != string::npos) {
         header.VERSION = get_bykeyword(new_line, ' ');
     }
@@ -128,7 +132,65 @@ void final_file::put_header(string new_line) {
     }
     //return header;;
 }
-void final_file::put_component(string new_line) {
+void def_file::put_command(string new_line) {
+    command_info _info;
+    string  _coordinate_text[2], _num_size_text[2], _step_text[2];
+    size_t space_pos1 = 0;
+    size_t space_pos0 = 0;
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+    _info.row_name = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+    _info.site_name = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+    _coordinate_text[0] = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+    _coordinate_text[1] = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+    _info.orientation = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1); 
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+    _num_size_text[0] = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+    _num_size_text[1] = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+    _step_text[0] = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+
+    space_pos0 = new_line.find(" ", space_pos1);
+    space_pos1 = new_line.find(" ", space_pos0 + 1);
+    _step_text[1] = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
+
+    _info.coordinate[0] = stoi(_coordinate_text[0]);
+    _info.coordinate[1] = stoi(_coordinate_text[1]);
+    _info.num_size[0] = stoi(_num_size_text[0]);
+    _info.num_size[1] = stoi(_num_size_text[1]);
+    _info.step[0] = stoi(_step_text[0]);
+    _info.step[1] = stoi(_step_text[1]);
+    command.push_back(_info);
+}
+void def_file::put_component(string new_line) {
 
     component_info _info;
     string  _coordinate_text;
@@ -160,7 +222,7 @@ void final_file::put_component(string new_line) {
     _info.coordinate[1] = stoi(_coordinate_text.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1));
     component.push_back(_info);
 }
-void final_file::put_specialnet(string new_line) {
+void def_file::put_specialnet(string new_line) {
     specialnet_info _info;
     string  _coordinate_text, _indirect_coordinate_text;
     size_t space_pos1 = 0;
@@ -208,7 +270,7 @@ void final_file::put_specialnet(string new_line) {
     }
     specialnet.push_back(_info);
 }
-string final_file::get_bykeyword(string word, char key) {
+string def_file::get_bykeyword(string word, char key) {
     string output = "not find";
     size_t space_pos1 = word.rfind(key);
     size_t space_pos0 = word.rfind(key, space_pos1 - 1);

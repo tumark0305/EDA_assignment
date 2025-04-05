@@ -140,16 +140,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include.h" />
-    <ClInclude Include="modules\final_file.h" />
+    <ClInclude Include="modules\def_file.h" />
     <ClInclude Include="modules\global_variable.h" />
-    <ClInclude Include="modules\Legalization_file.h" />
+    <ClInclude Include="modules\Legalization.h" />
     <ClInclude Include="modules\os_info.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="macro.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="modules\final_file.cpp" />
-    <ClCompile Include="modules\Legalization_file.cpp" />
+    <ClCompile Include="modules\def_file.cpp" />
+    <ClCompile Include="modules\Legalization.cpp" />
     <ClCompile Include="modules\os_info.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

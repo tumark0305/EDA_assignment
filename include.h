@@ -5,8 +5,7 @@
 #define INCLUDE_H
 #include "modules/global_variable.h"
 #include "modules/os_info.h"
-#include "modules/final_file.h"
-#include "modules/Legalization_file.h"
+#include "modules/def_file.h"
 
 #include <iostream>
 #include <fstream>

@@ -37,6 +37,7 @@ struct command_info {
 };
 struct data_info {
     header_info header;
+    vector< command_info> command;
     vector<component_info> component;
     vector< specialnet_info> specialnet;
 };
