@@ -2,12 +2,12 @@
 
 bool get_parameters(int argc, char* argv[]) {
     if (argc != 5) {
-        cerr << "Usage: " << argv[0] << " <MSSC width> <MSSC height> <input file> <output file>" << endl;
+        cerr << "Usage: " << argv[0] << " <cell width> <alpha> <input file> <output file>" << endl;
         return true;
     }
     else {
-        component_size[0] = stoi(argv[1]);
-        component_size[1] = stoi(argv[2]);
+        cell_width = stoi(argv[1]);
+        quality_alpha = stof(argv[2]);
         input_file_name = argv[3];
         output_file_name = argv[4];
         return false;

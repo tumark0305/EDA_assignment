@@ -2,6 +2,7 @@
 #define GLOBAL_VARIABLE_H 
 #include <iostream>
 #include <vector>
+
 using namespace std;
 struct header_info {
     string VERSION = "None";
