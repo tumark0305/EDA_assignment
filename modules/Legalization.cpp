@@ -1,8 +1,9 @@
 #include "Legalization.h"
-
+#define abacus_penalty 8.0
+#define abacus_normal 1.0
 int BlockInfo::reach_counter = 0;
 
-BlockInfo::BlockInfo(std::array<int, 2> _coordinate = { 0, 0 }, std::array<int, 2> _size = { 0, 0 },string _orientation= "N", component_info* _original_pointer = nullptr ) {
+BlockInfo::BlockInfo(std::array<int, 2> _coordinate, std::array<int, 2> _size ,string _orientation, component_info _original_data) {
     orientation = _orientation; 
     coordinate = _coordinate;
     size = _size;
@@ -10,7 +11,13 @@ BlockInfo::BlockInfo(std::array<int, 2> _coordinate = { 0, 0 }, std::array<int, 
     local_reach_counter = ++reach_counter;
     history_coordinate.push_back(_coordinate);
     tag = std::to_string(local_reach_counter);
-    original_pointer = _original_pointer;
+
+    component_data.inst_name = _original_data.inst_name;
+    component_data.macro_name = _original_data.macro_name;
+    component_data.place = _original_data.place;
+    component_data.coordinate[0] = _original_data.coordinate[0]; //x,y
+    component_data.coordinate[1] = _original_data.coordinate[1]; //x,y
+    component_data.orientation = _original_data.orientation;//N=left bottom
 }
 
 BlockInfo::BlockInfo(const BlockInfo& other) {
@@ -216,7 +223,9 @@ void BlockInfo::cal_from_sublock() {
 }
 unsigned int BlockInfo_col = 3;
 unsigned int BlockInfo_row = 4;
-legalization_controller::legalization_controller(data_info input_data,float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height) {//translate data_info to block info
+
+
+legalization_controller::legalization_controller(data_info& input_data,float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height) {//translate data_info to block info
     quality_alpha = _quality_alpha;
     cell_width = _cell_width;
     cell_height = _cell_height;
@@ -233,25 +242,25 @@ legalization_controller::legalization_controller(data_info input_data,float _qua
         std::array<int, 2> block_coordinate = { std::round(coord[0]),std::round(coord[1])};
         std::array<int, 2> block_size = { _cell_width,_cell_height};
         string block_orientation = input_data.component[i].orientation;
-        BlockInfo block(block_coordinate,block_size, block_orientation,&input_data.component[i]);
+        BlockInfo block(block_coordinate,block_size, block_orientation,input_data.component[i]);
         block_list.push_back(block);
         //std::cout << "register" << block.coordinate[0] << "," << block.coordinate[1] << std::endl;
     }
-
+    method.load_data(block_list);
     std::cout << "hi" << BlockInfo_row <<"," << BlockInfo_col << std::endl;
 }
 
-legalization_method::legalization_method(std::vector<BlockInfo> input_data) {
+//legalization_method::legalization_method() {}
+
+void legalization_method::load_data(std::vector<BlockInfo> input_data) {
     for (const auto& blk : input_data) {
-        BlockInfo temp = blk; 
-        temp *= blk; 
-        block_data.push_back(temp); 
+        BlockInfo temp = blk;
+        temp *= blk;
+        block_data_copy0.push_back(temp);
     }
+    block_count = input_data.size();
 }
 
-void legalization_method::abacus(float abacus_alpha) {
-    float x = abacus_alpha;
-}
 
 bool legalization_controller::legal() {
     std::vector<int> all_x;
@@ -285,19 +294,37 @@ bool legalization_controller::legal() {
 }
 
 
-void legalization_controller::loss(string method) {
-    int i = 1;
+void legalization_controller::loss(string _method) {
+    
+    loss_datapack_info loss_data_pack;
+    loss_data_pack.legal = legalization_controller::legal();
+    
+    loss_data_pack.quality = legalization_controller::loss_quality_factor();
+    
+    loss_datapack.push_back(loss_data_pack);
+    
+    if (_method == "spring") {
+    }
+    else if (_method == "abacus") {
+        method.abacus();
+    }
 }
 
 float legalization_controller::loss_quality_factor() {
     float sum = 0.0;
     float max_value=0.0;
     for (int i = 0; i < block_count; i++) {
-        float length = std::sqrt(std::pow(block_list[i].global_vector[0], 2) + std::pow(block_list[i].global_vector[1], 2));
+        component_info block_component = block_list[i].component_data;
+        int original_coord[2] = {block_component.coordinate[0] , block_component.coordinate[1]};
+        int new_coord[2] = { block_list[i].coordinate[0] * cell_width ,block_list[i].coordinate[1] * cell_height };
+        int global_vector[2] = { original_coord[0] - new_coord[0] ,original_coord[1] - new_coord[1] };
+
+        float length = std::sqrt(std::pow(global_vector[0], 2) + std::pow(global_vector[1], 2));
         if (length > max_value)max_value = length;
         sum += length;
     }
     float output = sum/ block_count + quality_alpha * max_value;
+    std::cout << "loss:" << output << std::endl;
     return output;
 }
 
@@ -316,6 +343,37 @@ std::array<int, 2> legalization_controller::loss_overlap(BlockInfo blocka, Block
     return output;
 }
 
-void legalization_controller::forward() {
-    int i = 1;
+void legalization_controller::forward(string _method) {
+    
+    if (_method == "spring") {
+        for (int i = 0; i < block_count; i++) {
+            block_list[i].move();
+        }
+        legalization_controller::loss(_method);
+    }
+    else if (_method == "abacus") {
+        for (int i = 0; i < block_count; i++) {
+            block_list[i].teleport();
+        }
+        legalization_controller::loss(_method);
+    }
+}
+
+void legalization_method::abacus() { 
+    std::vector< BlockInfo> placed;
+    std::vector<int> all_x_coord;
+    for (int i = 0; i < block_count; i++) {
+        all_x_coord.push_back(block_data_copy0[i].coordinate[0]);
+    }
+    std::vector<int> sorted_indices(block_count);
+    std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
+    std::sort(sorted_indices.begin(), sorted_indices.end(),
+        [&](int a, int b) {
+            return all_x_coord[a] < all_x_coord[b];
+        });
+    for (int idx : sorted_indices) {
+        std::vector< float> all_cost;
+        std::vector< BlockInfo> all_condition; 
+        std::cout << "ordered:" << block_data_copy0[idx].coordinate[0] << std::endl;
+    }
 }
