@@ -2,7 +2,7 @@
 
 int BlockInfo::reach_counter = 0;
 
-BlockInfo::BlockInfo(std::array<int, 2> _coordinate = { 0, 0 }, std::array<int, 2> _size = { 0, 0 },string _orientation= "N") {
+BlockInfo::BlockInfo(std::array<int, 2> _coordinate = { 0, 0 }, std::array<int, 2> _size = { 0, 0 },string _orientation= "N", component_info* _original_pointer = nullptr ) {
     orientation = _orientation; 
     coordinate = _coordinate;
     size = _size;
@@ -10,12 +10,11 @@ BlockInfo::BlockInfo(std::array<int, 2> _coordinate = { 0, 0 }, std::array<int, 
     local_reach_counter = ++reach_counter;
     history_coordinate.push_back(_coordinate);
     tag = std::to_string(local_reach_counter);
+    original_pointer = _original_pointer;
 }
 
 BlockInfo::BlockInfo(const BlockInfo& other) {
     // 複製 primitive members
-    col = other.col;
-    row = other.row;
     local_reach_counter = other.local_reach_counter;
     for (int i = 0; i < 2; ++i) {
         coordinate[i] = other.coordinate[i];
@@ -43,9 +42,6 @@ BlockInfo::BlockInfo(const BlockInfo& other) {
 // 淺拷貝：只複製指標或結構，不動態分配新記憶體
 BlockInfo& BlockInfo::operator=(const BlockInfo& other) {
     if (this == &other) return *this;
-
-    col = other.col;
-    row = other.row;
     local_reach_counter = other.local_reach_counter;
 
     for (int i = 0; i < 2; ++i) {
@@ -66,9 +62,6 @@ BlockInfo& BlockInfo::operator=(const BlockInfo& other) {
 // 深拷貝：建立新的子物件
 BlockInfo& BlockInfo::operator*=(const BlockInfo& other) {
     if (this == &other) return *this;
-
-    col = other.col;
-    row = other.row;
     local_reach_counter = other.local_reach_counter;
 
     for (int i = 0; i < 2; ++i) {
@@ -107,10 +100,10 @@ std::array<int, 2> BlockInfo::clip_coordinate() {
     std::array<int, 2> output;
     for (int i = 0; i < 2; i++) output[i] = coordinate[i];
 
-    if (static_cast<unsigned int>(output[0] + size[0]) > row) output[0] = static_cast<int>(row - size[0]);
+    if (static_cast<unsigned int>(output[0] + size[0]) > BlockInfo_row) output[0] = static_cast<int>(BlockInfo_row - size[0]);
     if (output[0] < 0) output[0] = 0; 
 
-    if (static_cast<unsigned int>(output[1] + size[1]) > col) output[1] = static_cast<int>(col - size[1]);
+    if (static_cast<unsigned int>(output[1] + size[1]) > BlockInfo_col) output[1] = static_cast<int>(BlockInfo_col - size[1]);
     if (output[1] < 0) output[1] = 0; 
     return output; 
 }
@@ -221,9 +214,31 @@ void BlockInfo::cal_from_sublock() {
     global_vector[0] = gv[0];
     global_vector[1] = gv[1];
 }
+unsigned int BlockInfo_col = 3;
+unsigned int BlockInfo_row = 4;
+legalization_controller::legalization_controller(data_info input_data,float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height) {//translate data_info to block info
+    quality_alpha = _quality_alpha;
+    cell_width = _cell_width;
+    cell_height = _cell_height;
+    int diearea_size[2] = { input_data.header.DIEAREA[1][0] - input_data.header.DIEAREA[0][0] ,input_data.header.DIEAREA[1][1] - input_data.header.DIEAREA[0][1] };
+    BlockInfo_row = input_data.command[0].step[0];
+    BlockInfo_col = input_data.command[0].num_size[1] * input_data.command.size();
+    site_width = input_data.command[0].num_size[0];
+    site_height = diearea_size[1] / BlockInfo_col;
+    block_count = input_data.component.size();
+    for (int i = 0; i < block_count; i++) {
+        float coord[2];
+        coord[0] = input_data.component[i].coordinate[0] / site_width;
+        coord[1] = input_data.component[i].coordinate[1] / site_height;
+        std::array<int, 2> block_coordinate = { std::round(coord[0]),std::round(coord[1])};
+        std::array<int, 2> block_size = { _cell_width,_cell_height};
+        string block_orientation = input_data.component[i].orientation;
+        BlockInfo block(block_coordinate,block_size, block_orientation,&input_data.component[i]);
+        block_list.push_back(block);
+        //std::cout << "register" << block.coordinate[0] << "," << block.coordinate[1] << std::endl;
+    }
 
-legalization_controller::legalization_controller(data_info input_data) {//translate data_info to block info
-    std::cout << "hi" << std::endl;
+    std::cout << "hi" << BlockInfo_row <<"," << BlockInfo_col << std::endl;
 }
 
 legalization_method::legalization_method(std::vector<BlockInfo> input_data) {
@@ -238,17 +253,66 @@ void legalization_method::abacus(float abacus_alpha) {
     float x = abacus_alpha;
 }
 
+bool legalization_controller::legal() {
+    std::vector<int> all_x;
+    std::vector<int> all_y;
+    std::vector<bool> which_overlap;
+
+    for (const auto& block : block_list) {
+        all_x.push_back(block.coordinate[0]);
+        all_x.push_back(block.coordinate[0] + block.size[0]);
+
+        all_y.push_back(block.coordinate[1]);
+        all_y.push_back(block.coordinate[1] + block.size[1]);
+    }
+
+    for (size_t a = 0; a < block_list.size(); ++a) {
+        for (size_t b = a + 1; b < block_list.size(); ++b) {
+            std::array<int, 2> overlap_result = loss_overlap(block_list[a], block_list[b]);
+            bool is_overlapping = (overlap_result[0] > 0 && overlap_result[1] > 0);
+            which_overlap.push_back(is_overlapping);
+        }
+    }
+
+    bool L = *std::min_element(all_x.begin(), all_x.end()) >= 0;
+    bool R = *std::max_element(all_x.begin(), all_x.end()) <= BlockInfo_row;
+    bool B = *std::min_element(all_y.begin(), all_y.end()) >= 0;
+    bool T = *std::max_element(all_y.begin(), all_y.end()) <= BlockInfo_col;
+
+    bool no_overlap = std::none_of(which_overlap.begin(), which_overlap.end(), [](bool val) { return val; });
+
+    return (L && R && B && T && no_overlap);
+}
+
+
 void legalization_controller::loss(string method) {
     int i = 1;
 }
 
 float legalization_controller::loss_quality_factor() {
-    float i = 0.0;
-    return i;
+    float sum = 0.0;
+    float max_value=0.0;
+    for (int i = 0; i < block_count; i++) {
+        float length = std::sqrt(std::pow(block_list[i].global_vector[0], 2) + std::pow(block_list[i].global_vector[1], 2));
+        if (length > max_value)max_value = length;
+        sum += length;
+    }
+    float output = sum/ block_count + quality_alpha * max_value;
+    return output;
 }
 
 std::array<int, 2> legalization_controller::loss_overlap(BlockInfo blocka, BlockInfo blockb) {
-    std::array<int, 2> output = { 0,0 };
+    std::array<int, 2> x_range_a = { blocka.coordinate[0], blocka.coordinate[0] + blocka.size[0] };
+    std::array<int, 2> y_range_a = { blocka.coordinate[1], blocka.coordinate[1] + blocka.size[1] };
+
+    std::array<int, 2> x_range_b = { blockb.coordinate[0], blockb.coordinate[0] + blockb.size[0] };
+    std::array<int, 2> y_range_b = { blockb.coordinate[1], blockb.coordinate[1] + blockb.size[1] };
+
+    // 計算 x, y 方向的重疊長度
+    int x_overlap = std::min(x_range_a[1], x_range_b[1]) - std::max(x_range_a[0], x_range_b[0]);
+    int y_overlap = std::min(y_range_a[1], y_range_b[1]) - std::max(y_range_a[0], y_range_b[0]);
+
+    std::array<int, 2> output = { x_overlap, y_overlap };
     return output;
 }
 

@@ -4,19 +4,22 @@
 #include "global_variable.h"
 #include <sstream> 
 #include <array>
+#include <cmath>
+#include <algorithm>
 
 struct loss_datapack_info {
     float quality = 9999.0;
     bool legal = false;
 };
+extern unsigned int BlockInfo_col;
+extern unsigned int BlockInfo_row;
 
 class BlockInfo {
 private:
     static int reach_counter;
-    unsigned int col = 3;
-    unsigned int row = 4;
 public:
     int local_reach_counter;
+    component_info* original_pointer = nullptr;
     std::array<int, 2> coordinate = { 0,0 };
     std::array<int, 2> size = { 0,0 };
     std::array<int, 2> step = { 0,0 };
@@ -26,7 +29,7 @@ public:
     std::string tag;
     std::string orientation;
     std::vector<BlockInfo*> sublock;
-    BlockInfo(std::array<int, 2> _coordinate, std::array<int, 2> _size, std::string _orientation);
+    BlockInfo(std::array<int, 2> _coordinate, std::array<int, 2> _size, std::string _orientation, component_info* _original_pointer );
     BlockInfo(const BlockInfo& other); 
     BlockInfo& operator=(const BlockInfo& other);
     BlockInfo& operator*=(const BlockInfo& other);
@@ -42,15 +45,19 @@ public:
 
 class legalization_controller {
 private:
-    unsigned int col = 1;
-    unsigned int row = 2;
+    float site_width = 0.0;
+    float site_height = 0.0;
     std::vector<loss_datapack_info> loss_datapack;
     unsigned int block_count = 0;
     std::vector<BlockInfo> block_list;
+    float quality_alpha;
+    unsigned int cell_width;
+    unsigned int cell_height;
 public:
-    legalization_controller(data_info input_data);
+    legalization_controller(data_info input_data, float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height);
     void forward();
     void loss(string method);
+    bool legal();
     float loss_quality_factor();
     std::array<int, 2> loss_overlap(BlockInfo blocka, BlockInfo blockb);
 };

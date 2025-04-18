@@ -23,6 +23,7 @@ extern string input_file_name;
 extern string output_file_name;
 extern unsigned int cell_width;
 extern float quality_alpha;
+extern unsigned int cell_height;
 
 bool get_parameters(int argc, char* argv[]);
 
