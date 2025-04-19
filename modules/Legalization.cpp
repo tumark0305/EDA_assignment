@@ -27,7 +27,6 @@ BlockInfo::BlockInfo(const BlockInfo& other) {
         coordinate[i] = other.coordinate[i];
         size[i] = other.size[i];
         step[i] = other.step[i];
-        global_vector[i] = other.global_vector[i];
         new_coordinate[i] = other.new_coordinate[i];
     }
 
@@ -46,7 +45,6 @@ BlockInfo& BlockInfo::operator=(const BlockInfo& other) {
         coordinate[i] = other.coordinate[i];
         size[i] = other.size[i];
         step[i] = other.step[i];
-        global_vector[i] = other.global_vector[i];
         new_coordinate[i] = other.new_coordinate[i];
     }
 
@@ -81,9 +79,6 @@ void BlockInfo::move() {
     coordinate[0] = clipped[0];
     coordinate[1] = clipped[1];
 
-    global_vector[0] = history_coordinate[0][0] - coordinate[0];
-    global_vector[1] = history_coordinate[0][1] - coordinate[1];
-
     if (!sublock.empty()) {
         int min_x = INT_MAX, min_y = INT_MAX;
         for (const auto& s : sublock) {
@@ -111,9 +106,6 @@ void BlockInfo::unprotect_move() {
         s.coordinate[0] += step[0];
         s.coordinate[1] += step[1];
     }
-
-    global_vector[0] = history_coordinate[0][0] - coordinate[0];
-    global_vector[1] = history_coordinate[0][1] - coordinate[1];
 }
 
 void BlockInfo::teleport() {
@@ -133,9 +125,12 @@ void BlockInfo::teleport() {
         s.coordinate[0] += diff[0];
         s.coordinate[1] += diff[1];
     }
+}
 
-    global_vector[0] = history_coordinate[0][0] - coordinate[0];
-    global_vector[1] = history_coordinate[0][1] - coordinate[1];
+float BlockInfo::global_distance() {
+    float x2 = std::pow(history_coordinate[0][0] - coordinate[0], 2);
+    float y2 = std::pow(history_coordinate[0][1] - coordinate[1], 2);
+    return std::sqrt(x2 + y2);
 }
 
 void BlockInfo::unprotect_teleport() {
@@ -151,9 +146,6 @@ void BlockInfo::unprotect_teleport() {
         s.coordinate[0] += diff[0];
         s.coordinate[1] += diff[1];
     }
-
-    global_vector[0] = history_coordinate[0][0] - coordinate[0];
-    global_vector[1] = history_coordinate[0][1] - coordinate[1];
 }
 
 void BlockInfo::cal_from_sublock() {
@@ -178,11 +170,18 @@ void BlockInfo::cal_from_sublock() {
     coordinate[1] = min_y;
     size[0] = total_size[0];
     size[1] = total_size[1];
-    global_vector[0] = gv[0];
-    global_vector[1] = gv[1];
 }
 unsigned int BlockInfo_col = 3;
 unsigned int BlockInfo_row = 4;
+
+bool operator==(const BlockInfo& a, const BlockInfo& b) {
+    bool eqcoord = a.coordinate == b.coordinate;
+    bool eqsize = a.size == b.size;
+    return  eqcoord &&
+        eqsize &&
+        a.tag == b.tag &&
+        a.orientation == b.orientation;
+}
 
 
 legalization_controller::legalization_controller(data_info& input_data,float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height) {//translate data_info to block info
@@ -389,6 +388,10 @@ void legalization_method::abacus_cal_cost(BlockInfo input_block , int if_atrow) 
     }
 }
 
+BlockInfo legalization_method::combine_block(BlockInfo block_new, BlockInfo block_placed) {
+
+}
+
 void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_complex_loss_output,cal_complex_loss_condition
     string save_tag = now_block.tag;
     BlockInfo new_block = now_block;
@@ -401,9 +404,33 @@ void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_co
         for (int i = 0; i < placed_mirror1.size(); i++) {
             std::array<int, 2> _overlap = overlap(new_block, placed_mirror1[i]);
             if (_overlap[0] > 0 && _overlap[1] > 0) {
+                changed = true;
                 effected_blocks.push_back(placed_mirror1[i]);
-                //remove
+                placed_mirror0.erase(
+                    std::remove(placed_mirror0.begin(), placed_mirror0.end(), placed_mirror1[i]),
+                    placed_mirror0.end()
+                );
+                new_block = combine_block(new_block, placed_mirror1[i]); 
+                int sum_vector = 0;
+                for (int subidx = 0; subidx < new_block.sublock.size(); subidx++) {
+                    sum_vector += new_block.sublock[subidx].history_coordinate[0][0] - new_block.sublock[subidx].coordinate[0];
+                }
+                new_block.step[0] = sum_vector / new_block.sublock.size();
+                new_block.step[1] = 0;
+                new_block.move();
             }
+        }
+    }
+    placed_mirror0.push_back(new_block);
+    float afterD = 0;
+    float DL = 0;
+    for (BlockInfo& _sublock : new_block.sublock) {
+        if (_sublock.tag == "current") {
+            DL += _sublock.global_distance();
+            _sublock.tag = _save_tag; // 假設 _save_tag 已經初始化
+        }
+        else {
+            afterD += calc_distance(_sublock.history_coordinate[0], _sublock.coordinate);
         }
     }
 }

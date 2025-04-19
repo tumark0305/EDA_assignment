@@ -24,7 +24,6 @@ public:
     std::array<int, 2> coordinate = { 0,0 };
     std::array<int, 2> size = { 0,0 };
     std::array<int, 2> step = { 0,0 };
-    std::array<int, 2> global_vector = { 0,0 };
     std::array<int, 2> new_coordinate;
     std::vector<std::array<int, 2>> history_coordinate;
     std::string tag;
@@ -33,14 +32,15 @@ public:
     BlockInfo(std::array<int, 2> _coordinate, std::array<int, 2> _size, std::string _orientation, component_info _original_data );
     BlockInfo(const BlockInfo& other); 
     BlockInfo& operator=(const BlockInfo& other);
-
     std::array<int, 2> clip_coordinate();
     void move();
     void unprotect_move();
     void teleport();
     void unprotect_teleport();
     void cal_from_sublock();
+    float global_distance();
 };
+bool operator==(const BlockInfo& a, const BlockInfo& b);
 
 class legalization_method {
 private:
@@ -57,6 +57,7 @@ private:
     std::vector< BlockInfo> cal_complex_loss_condition;
     void cal_complex_loss(BlockInfo now_block);
     void abacus_cal_cost(BlockInfo input_block, int if_atrow);
+    BlockInfo combine_block(BlockInfo block_new , BlockInfo block_placed);
 public:
     legalization_method() = default;
     std::array<int, 2> overlap(BlockInfo blocka, BlockInfo blockb);
