@@ -358,7 +358,8 @@ void legalization_method::abacus() { // return output
 }
 
 void legalization_method::abacus_cal_cost(BlockInfo input_block , int if_atrow) {//return abacus_cal_cost_output,abacus_cal_cost_placed_condition
-    std::vector<BlockInfo> placed_mirror0 = placed;
+    placed_mirror0.clear();
+    placed_mirror0 = placed;
     BlockInfo  now_block = input_block;
     now_block.new_coordinate[1] = if_atrow;
     now_block.teleport();
@@ -371,20 +372,38 @@ void legalization_method::abacus_cal_cost(BlockInfo input_block , int if_atrow) 
     for (int touch_idx = 0; touch_idx < placed_mirror1.size(); touch_idx++) {
         std::array<int, 2> _overlap = overlap(now_block, placed_mirror1[touch_idx]); 
         if (_overlap[0] > 0 && _overlap[1] > 0) {
-            auto result = cal_complex_loss(now_block);
+            cal_complex_loss(now_block);
             abacus_cal_cost_output = cal_complex_loss_output;
             abacus_cal_cost_placed_condition = cal_complex_loss_condition;
             found_overlap = true;
             break;
         }
     }
-
     if (!found_overlap) {
         // 計算距離
         float norm = std::sqrt(std::pow(now_block.history_coordinate[0][0] - now_block.coordinate[0], 2) +
             std::pow(now_block.history_coordinate[0][1] - now_block.coordinate[1], 2));
-        cal_complex_loss_output = alpha * norm;
+        cal_complex_loss_output = 1 * norm;//alpha ==1
         placed_mirror0.push_back(now_block);  // 添加到已放置區塊列表
         abacus_cal_cost_placed_condition = placed_mirror0;  // 更新放置條件
+    }
+}
+
+void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_complex_loss_output,cal_complex_loss_condition
+    string save_tag = now_block.tag;
+    BlockInfo new_block = now_block;
+    new_block.tag = "current";
+    std::vector< BlockInfo> effected_blocks;
+    bool changed = true;
+    std::vector<BlockInfo> placed_mirror1 = placed_mirror0; 
+    while (changed) {
+        changed = false;
+        for (int i = 0; i < placed_mirror1.size(); i++) {
+            std::array<int, 2> _overlap = overlap(new_block, placed_mirror1[i]);
+            if (_overlap[0] > 0 && _overlap[1] > 0) {
+                effected_blocks.push_back(placed_mirror1[i]);
+                //remove
+            }
+        }
     }
 }

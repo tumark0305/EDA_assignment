@@ -45,7 +45,9 @@ public:
 class legalization_method {
 private:
     std::vector< BlockInfo> placed; 
+    std::vector<BlockInfo> placed_mirror0;
     std::vector<BlockInfo> block_data_copy0;
+    float abacus_max_loss = 0.0;
     unsigned int block_count = 0;
     float abacus_current_cost = 999.9;
     std::vector< BlockInfo> abacus_current_condition;
@@ -53,12 +55,13 @@ private:
     std::vector< BlockInfo> abacus_cal_cost_placed_condition;
     float cal_complex_loss_output = 0.0;
     std::vector< BlockInfo> cal_complex_loss_condition;
+    void cal_complex_loss(BlockInfo now_block);
+    void abacus_cal_cost(BlockInfo input_block, int if_atrow);
 public:
     legalization_method() = default;
     std::array<int, 2> overlap(BlockInfo blocka, BlockInfo blockb);
     void load_data(std::vector<BlockInfo> input_data);
     void abacus();
-    void abacus_cal_cost(BlockInfo input_block, int if_atrow);
     std::vector<std::array<int, 2>> output;
 };
 
