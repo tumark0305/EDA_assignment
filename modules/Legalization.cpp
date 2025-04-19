@@ -371,9 +371,16 @@ void legalization_method::abacus() {
         [&](int a, int b) {
             return all_x_coord[a] < all_x_coord[b];
         });
-    for (int idx : sorted_indices) {
+    for (int idx : sorted_indices) {//X由小到大
         std::vector< float> all_cost;
-        std::vector< BlockInfo> all_condition; 
+        std::vector<std::vector< BlockInfo>> all_condition; 
+        for (int option_row = 0; option_row < BlockInfo_col; option_row++) {
+
+        }
         std::cout << "ordered:" << block_data_copy0[idx].coordinate[0] << std::endl;
     }
+}
+
+void legalization_method::abacus_cal_cost() {
+    int i = 1;
 }

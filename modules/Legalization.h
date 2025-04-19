@@ -48,10 +48,13 @@ class legalization_method {
 private:
     std::vector<BlockInfo> block_data_copy0;
     unsigned int block_count = 0;
+    float abacus_current_cost = 999.9;
+    std::vector< BlockInfo> abacus_current_condition;
 public:
     legalization_method() = default;
     void load_data(std::vector<BlockInfo> input_data);
     void abacus();
+    void abacus_cal_cost();
     std::vector<std::array<int, 2>> output;
 };
 
