@@ -220,7 +220,6 @@ void legalization_method::load_data(std::vector<BlockInfo> input_data) {
     block_count = input_data.size();
 }
 
-
 bool legalization_controller::legal() {
     std::vector<int> all_x;
     std::vector<int> all_y;
@@ -236,7 +235,7 @@ bool legalization_controller::legal() {
 
     for (size_t a = 0; a < block_list.size(); ++a) {
         for (size_t b = a + 1; b < block_list.size(); ++b) {
-            std::array<int, 2> overlap_result = loss_overlap(block_list[a], block_list[b]);
+            std::array<int, 2> overlap_result = method.overlap(block_list[a], block_list[b]);
             bool is_overlapping = (overlap_result[0] > 0 && overlap_result[1] > 0);
             which_overlap.push_back(is_overlapping);
         }
@@ -251,7 +250,6 @@ bool legalization_controller::legal() {
 
     return (L && R && B && T && no_overlap);
 }
-
 
 void legalization_controller::loss(string _method) {
     
@@ -287,7 +285,7 @@ float legalization_controller::loss_quality_factor() {
     return output;
 }
 
-std::array<int, 2> legalization_controller::loss_overlap(BlockInfo blocka, BlockInfo blockb) {
+std::array<int, 2> legalization_method::overlap(BlockInfo blocka, BlockInfo blockb) {
     std::array<int, 2> x_range_a = { blocka.coordinate[0], blocka.coordinate[0] + blocka.size[0] };
     std::array<int, 2> y_range_a = { blocka.coordinate[1], blocka.coordinate[1] + blocka.size[1] };
 
@@ -318,7 +316,7 @@ void legalization_controller::forward(string _method) {
     }
 }
 
-void legalization_method::abacus() { 
+void legalization_method::abacus() { // return output
     placed.clear();
     std::vector<int> all_x_coord;
     for (int i = 0; i < block_count; i++) {
@@ -359,6 +357,34 @@ void legalization_method::abacus() {
     }
 }
 
-void legalization_method::abacus_cal_cost(BlockInfo input_block , int if_atrow) {
+void legalization_method::abacus_cal_cost(BlockInfo input_block , int if_atrow) {//return abacus_cal_cost_output,abacus_cal_cost_placed_condition
     std::vector<BlockInfo> placed_mirror0 = placed;
+    BlockInfo  now_block = input_block;
+    now_block.new_coordinate[1] = if_atrow;
+    now_block.teleport();
+    std::vector<BlockInfo> placed_condition;  // 設置放置條件
+    std::vector<BlockInfo> placed_mirror1 = placed_mirror0;  // 複製 _placed_mirror0
+    abacus_current_cost = 999.9;
+
+    bool found_overlap = false;
+
+    for (int touch_idx = 0; touch_idx < placed_mirror1.size(); touch_idx++) {
+        std::array<int, 2> _overlap = overlap(now_block, placed_mirror1[touch_idx]); 
+        if (_overlap[0] > 0 && _overlap[1] > 0) {
+            auto result = cal_complex_loss(now_block);
+            abacus_cal_cost_output = cal_complex_loss_output;
+            abacus_cal_cost_placed_condition = cal_complex_loss_condition;
+            found_overlap = true;
+            break;
+        }
+    }
+
+    if (!found_overlap) {
+        // 計算距離
+        float norm = std::sqrt(std::pow(now_block.history_coordinate[0][0] - now_block.coordinate[0], 2) +
+            std::pow(now_block.history_coordinate[0][1] - now_block.coordinate[1], 2));
+        cal_complex_loss_output = alpha * norm;
+        placed_mirror0.push_back(now_block);  // 添加到已放置區塊列表
+        abacus_cal_cost_placed_condition = placed_mirror0;  // 更新放置條件
+    }
 }

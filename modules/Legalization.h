@@ -49,8 +49,13 @@ private:
     unsigned int block_count = 0;
     float abacus_current_cost = 999.9;
     std::vector< BlockInfo> abacus_current_condition;
+    float abacus_cal_cost_output = 0.0;
+    std::vector< BlockInfo> abacus_cal_cost_placed_condition;
+    float cal_complex_loss_output = 0.0;
+    std::vector< BlockInfo> cal_complex_loss_condition;
 public:
     legalization_method() = default;
+    std::array<int, 2> overlap(BlockInfo blocka, BlockInfo blockb);
     void load_data(std::vector<BlockInfo> input_data);
     void abacus();
     void abacus_cal_cost(BlockInfo input_block, int if_atrow);
@@ -74,7 +79,6 @@ public:
     void loss(string _method);
     bool legal();
     float loss_quality_factor();
-    std::array<int, 2> loss_overlap(BlockInfo blocka, BlockInfo blockb);
 };
 
 #endif
