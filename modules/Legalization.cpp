@@ -382,7 +382,7 @@ void legalization_method::abacus_cal_cost(BlockInfo input_block , int if_atrow) 
         // 計算距離
         float norm = std::sqrt(std::pow(now_block.history_coordinate[0][0] - now_block.coordinate[0], 2) +
             std::pow(now_block.history_coordinate[0][1] - now_block.coordinate[1], 2));
-        cal_complex_loss_output = 1 * norm;//alpha ==1
+        cal_complex_loss_output = abacus_normal * norm;//alpha ==1 
         placed_mirror0.push_back(now_block);  // 添加到已放置區塊列表
         abacus_cal_cost_placed_condition = placed_mirror0;  // 更新放置條件
     }
@@ -422,15 +422,29 @@ void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_co
         }
     }
     placed_mirror0.push_back(new_block);
-    float afterD = 0;
-    float DL = 0;
+    float afterD = 0.0;
+    float DL = 0.0;
     for (BlockInfo& _sublock : new_block.sublock) {
         if (_sublock.tag == "current") {
             DL += _sublock.global_distance();
-            _sublock.tag = _save_tag; // 假設 _save_tag 已經初始化
+            _sublock.tag = save_tag; // 假設 _save_tag 已經初始化
         }
         else {
-            afterD += calc_distance(_sublock.history_coordinate[0], _sublock.coordinate);
+            afterD += _sublock.global_distance(); 
         }
+    }
+    float beforeD = 0.0;
+    for (BlockInfo& block : effected_blocks) {
+        beforeD += block.global_distance();
+    }
+    cal_complex_loss_output = alpha * DL + afterD - beforeD;
+    cal_complex_loss_condition = unpack(placed_mirror0);
+    std::vector<bool> oversize;
+    for (const BlockInfo& combined : placed_mirror0) {
+        oversize.push_back(combined.size[0] > BlockInfo_row);
+    }
+
+    if (std::any_of(oversize.begin(), oversize.end(), [](bool v) { return v; })) {
+        cal_complex_loss_output = std::numeric_limits<float>::infinity();
     }
 }
