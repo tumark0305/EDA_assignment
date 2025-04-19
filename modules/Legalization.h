@@ -29,12 +29,10 @@ public:
     std::vector<std::array<int, 2>> history_coordinate;
     std::string tag;
     std::string orientation;
-    std::vector<BlockInfo*> sublock;
+    std::vector<BlockInfo> sublock;
     BlockInfo(std::array<int, 2> _coordinate, std::array<int, 2> _size, std::string _orientation, component_info _original_data );
     BlockInfo(const BlockInfo& other); 
     BlockInfo& operator=(const BlockInfo& other);
-    BlockInfo& operator*=(const BlockInfo& other);
-    ~BlockInfo();
 
     std::array<int, 2> clip_coordinate();
     void move();
@@ -46,6 +44,7 @@ public:
 
 class legalization_method {
 private:
+    std::vector< BlockInfo> placed; 
     std::vector<BlockInfo> block_data_copy0;
     unsigned int block_count = 0;
     float abacus_current_cost = 999.9;
@@ -54,7 +53,7 @@ public:
     legalization_method() = default;
     void load_data(std::vector<BlockInfo> input_data);
     void abacus();
-    void abacus_cal_cost();
+    void abacus_cal_cost(BlockInfo input_block, int if_atrow);
     std::vector<std::array<int, 2>> output;
 };
 

@@ -35,18 +35,9 @@ BlockInfo::BlockInfo(const BlockInfo& other) {
     tag = other.tag;
 
     // 深拷貝 sublock
-    sublock.clear();
-    for (auto* blk : other.sublock) {
-        if (blk) {
-            sublock.push_back(new BlockInfo(*blk)); // 使用 copy constructor 再建一份
-        }
-        else {
-            sublock.push_back(nullptr);
-        }
-    }
+    sublock = other.sublock;
 }
-
-// 淺拷貝：只複製指標或結構，不動態分配新記憶體
+// 深拷貝：建立新的子物件
 BlockInfo& BlockInfo::operator=(const BlockInfo& other) {
     if (this == &other) return *this;
     local_reach_counter = other.local_reach_counter;
@@ -61,47 +52,11 @@ BlockInfo& BlockInfo::operator=(const BlockInfo& other) {
 
     history_coordinate = other.history_coordinate;
     tag = other.tag;
-    sublock = other.sublock; // 淺拷貝：只複製指標容器，不創新物件
-
+    orientation = other.orientation;
+    component_data = other.component_data;
+    sublock = other.sublock;
     return *this;
 }
-
-// 深拷貝：建立新的子物件
-BlockInfo& BlockInfo::operator*=(const BlockInfo& other) {
-    if (this == &other) return *this;
-    local_reach_counter = other.local_reach_counter;
-
-    for (int i = 0; i < 2; ++i) {
-        coordinate[i] = other.coordinate[i];
-        size[i] = other.size[i];
-        step[i] = other.step[i];
-        global_vector[i] = other.global_vector[i];
-        new_coordinate[i] = other.new_coordinate[i];
-    }
-
-    history_coordinate = other.history_coordinate;
-    tag = other.tag;
-
-    // 先刪除原有 sublock
-    for (auto* blk : sublock) delete blk;
-    sublock.clear();
-
-    // 深拷貝 sublock
-    for (auto* blk : other.sublock) {
-        sublock.push_back(blk ? new BlockInfo(*blk) : nullptr);
-    }
-
-    return *this;
-}
-
-
-BlockInfo::~BlockInfo() {
-    for (auto* blk : sublock) {
-        delete blk;
-    }
-    sublock.clear();
-}
-
 
 std::array<int, 2> BlockInfo::clip_coordinate() {
     std::array<int, 2> output;
@@ -131,14 +86,16 @@ void BlockInfo::move() {
 
     if (!sublock.empty()) {
         int min_x = INT_MAX, min_y = INT_MAX;
-        for (auto s : sublock) {
-            if (s->coordinate[0] < min_x) min_x = s->coordinate[0];
-            if (s->coordinate[1] < min_y) min_y = s->coordinate[1];
+        for (const auto& s : sublock) {
+            if (s.coordinate[0] < min_x) min_x = s.coordinate[0];
+            if (s.coordinate[1] < min_y) min_y = s.coordinate[1];
         }
+
         int offset[2] = { coordinate[0] - min_x, coordinate[1] - min_y };
-        for (auto s : sublock) {
-            s->coordinate[0] += offset[0];
-            s->coordinate[1] += offset[1];
+
+        for (auto& s : sublock) {
+            s.coordinate[0] += offset[0];
+            s.coordinate[1] += offset[1];
         }
     }
 }
@@ -150,9 +107,9 @@ void BlockInfo::unprotect_move() {
     coordinate[0] += step[0];
     coordinate[1] += step[1];
 
-    for (auto s : sublock) {
-        s->coordinate[0] += step[0];
-        s->coordinate[1] += step[1];
+    for (auto& s : sublock) {
+        s.coordinate[0] += step[0];
+        s.coordinate[1] += step[1];
     }
 
     global_vector[0] = history_coordinate[0][0] - coordinate[0];
@@ -173,8 +130,8 @@ void BlockInfo::teleport() {
     int diff[2] = { hist[0] - coordinate[0], hist[1] - coordinate[1] };
 
     for (auto s : sublock) {
-        s->coordinate[0] += diff[0];
-        s->coordinate[1] += diff[1];
+        s.coordinate[0] += diff[0];
+        s.coordinate[1] += diff[1];
     }
 
     global_vector[0] = history_coordinate[0][0] - coordinate[0];
@@ -191,8 +148,8 @@ void BlockInfo::unprotect_teleport() {
     coordinate[1] = new_coordinate[1];
 
     for (auto s : sublock) {
-        s->coordinate[0] += diff[0];
-        s->coordinate[1] += diff[1];
+        s.coordinate[0] += diff[0];
+        s.coordinate[1] += diff[1];
     }
 
     global_vector[0] = history_coordinate[0][0] - coordinate[0];
@@ -205,13 +162,16 @@ void BlockInfo::cal_from_sublock() {
     int total_size[2] = { 0, 0 };
     int gv[2] = { 0, 0 };
 
-    for (auto s : sublock) {
-        if (s->coordinate[0] < min_x) min_x = s->coordinate[0];
-        if (s->coordinate[1] < min_y) min_y = s->coordinate[1];
-        total_size[0] += s->size[0];
-        total_size[1] += s->size[1];
-        gv[0] += s->history_coordinate[0][0] - s->coordinate[0];
-        gv[1] += s->history_coordinate[0][1] - s->coordinate[1];
+    for (const auto& s : sublock) {
+        if (s.coordinate[0] < min_x) min_x = s.coordinate[0];
+        if (s.coordinate[1] < min_y) min_y = s.coordinate[1];
+        total_size[0] += s.size[0];
+        total_size[1] += s.size[1];
+
+        if (!s.history_coordinate.empty()) {
+            gv[0] += s.history_coordinate[0][0] - s.coordinate[0];
+            gv[1] += s.history_coordinate[0][1] - s.coordinate[1];
+        }
     }
 
     coordinate[0] = min_x;
@@ -255,7 +215,6 @@ legalization_controller::legalization_controller(data_info& input_data,float _qu
 void legalization_method::load_data(std::vector<BlockInfo> input_data) {
     for (const auto& blk : input_data) {
         BlockInfo temp = blk;
-        temp *= blk;
         block_data_copy0.push_back(temp);
     }
     block_count = input_data.size();
@@ -360,7 +319,7 @@ void legalization_controller::forward(string _method) {
 }
 
 void legalization_method::abacus() { 
-    std::vector< BlockInfo> placed;
+    placed.clear();
     std::vector<int> all_x_coord;
     for (int i = 0; i < block_count; i++) {
         all_x_coord.push_back(block_data_copy0[i].coordinate[0]);
@@ -375,12 +334,31 @@ void legalization_method::abacus() {
         std::vector< float> all_cost;
         std::vector<std::vector< BlockInfo>> all_condition; 
         for (int option_row = 0; option_row < BlockInfo_col; option_row++) {
-
+            abacus_cal_cost(block_data_copy0[idx], option_row);
+            all_cost.push_back(abacus_current_cost);
+            all_condition.push_back(abacus_current_condition);
         }
-        std::cout << "ordered:" << block_data_copy0[idx].coordinate[0] << std::endl;
+        std::size_t min_index = 0;
+        double min_cost = all_cost[0];
+        for (std::size_t i = 1; i < all_cost.size(); ++i) {
+            if (all_cost[i] < min_cost) {
+                min_cost = all_cost[i];
+                min_index = i;
+            }
+        }
+        placed = all_condition[min_index];
+    }
+    output.clear();
+    for (const auto& _block_orig : block_data_copy0) {
+        for (const auto& _block_data : placed) {
+            if (_block_orig.tag == _block_data.tag) {
+                output.push_back(_block_data.coordinate);
+                break;
+            }
+        }
     }
 }
 
-void legalization_method::abacus_cal_cost() {
-    int i = 1;
+void legalization_method::abacus_cal_cost(BlockInfo input_block , int if_atrow) {
+    std::vector<BlockInfo> placed_mirror0 = placed;
 }
