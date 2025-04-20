@@ -271,11 +271,10 @@ void legalization_controller::loss(string _method) {
 	else if (_method == "abacus") {
 		method.abacus();
 	}
-	std::cout << "method.output len:" << method.output.size() << std::endl;
-	/*for (int i = 0; i < block_count; i++) {
+	for (int i = 0; i < block_count; i++) {
 		block_list[i].new_coordinate[0] = method.output[i][0];
 		block_list[i].new_coordinate[1] = method.output[i][1];
-	}*/
+	}
 }
 
 float legalization_controller::loss_quality_factor() {
@@ -293,6 +292,21 @@ float legalization_controller::loss_quality_factor() {
 	}
 	float output = sum / block_count + quality_alpha * max_value;
 
+	return output;
+}
+
+std::vector<component_info> legalization_controller::convert_component() {
+	std::vector<component_info> output;
+	for (int idx = 0; idx < block_count; idx++) {
+		component_info new_component;
+		new_component.inst_name = block_list[idx].component_data.inst_name;
+		new_component.macro_name = block_list[idx].component_data.macro_name;
+		new_component.place = block_list[idx].component_data.place;
+		new_component.coordinate[0] = 0; //x,y
+		new_component.coordinate[1] = 0; //x,y
+		new_component.orientation = "None";//N=left bottom
+		output.push_back(new_component);
+	}
 	return output;
 }
 
@@ -344,8 +358,8 @@ void legalization_method::abacus() { // return output
 		std::vector<std::vector< BlockInfo>> all_condition;
 		for (int option_row = 0; option_row < BlockInfo_col; option_row++) {
 			abacus_cal_cost(block_data_copy0[idx], option_row);
-			all_cost.push_back(abacus_current_cost);
-			all_condition.push_back(abacus_current_condition);
+			all_cost.push_back(abacus_cal_cost_output);
+			all_condition.push_back(abacus_cal_cost_placed_condition);
 		}
 		std::size_t min_index = 0;
 		double min_cost = all_cost[0];
@@ -358,14 +372,13 @@ void legalization_method::abacus() { // return output
 		if (abacus_max_loss > min_cost) {
 			abacus_max_loss = min_cost;
 		}
+		
 		placed = all_condition[min_index];
 	}
 	output.clear();
 	for (const auto& _block_orig : block_data_copy0) {
 		for (const auto& _block_data : placed) {
-			std::cout << "tag1:" << _block_orig.tag  << "     ,tag2:" << _block_data.tag  << std::endl;
 			if (_block_orig.tag == _block_data.tag) {
-				
 				output.push_back(_block_data.coordinate);
 				break;
 			}
@@ -403,6 +416,7 @@ void legalization_method::abacus_cal_cost(BlockInfo input_block, int if_atrow) {
 		placed_mirror0.push_back(now_block);  // 添加到已放置區塊列表
 		abacus_cal_cost_placed_condition = placed_mirror0;  // 更新放置條件
 	}
+	
 }
 
 BlockInfo legalization_method::combine_block(BlockInfo block_new, BlockInfo block_placed) {

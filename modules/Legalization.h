@@ -83,6 +83,7 @@ public:
     void loss(string _method);
     bool legal();
     float loss_quality_factor();
+    std::vector<component_info> convert_component(); 
 };
 
 #endif
