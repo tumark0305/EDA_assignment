@@ -17,6 +17,8 @@ int main(int argc, char* argv[]) {
     legalization_controller legalization(file.data_pack, quality_alpha, cell_width,cell_height);
     legalization.forward("abacus");
     legalization.forward("abacus");
+    legalization.forward("abacus"); 
+    data_info data_pack_output = legalization.convert_data_pack();
     cout << "end" << endl;
     
     return 0;

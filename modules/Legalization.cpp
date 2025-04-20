@@ -185,7 +185,11 @@ bool operator==(const BlockInfo& a, const BlockInfo& b) {
 
 
 legalization_controller::legalization_controller(data_info& input_data, float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height) {//translate data_info to block info
-	quality_alpha = _quality_alpha;
+	input_data_pack_save.command = input_data.command;
+	input_data_pack_save.component = input_data.component; 
+	input_data_pack_save.specialnet = input_data.specialnet;  
+	input_data_pack_save.header = input_data.header; 
+	quality_alpha = _quality_alpha; 
 	cell_width = _cell_width;
 	cell_height = _cell_height;
 	int diearea_size[2] = { input_data.header.DIEAREA[1][0] - input_data.header.DIEAREA[0][0] ,input_data.header.DIEAREA[1][1] - input_data.header.DIEAREA[0][1] };
@@ -295,19 +299,21 @@ float legalization_controller::loss_quality_factor() {
 	return output;
 }
 
-std::vector<component_info> legalization_controller::convert_component() {
+data_info legalization_controller::convert_data_pack() { 
 	std::vector<component_info> output;
 	for (int idx = 0; idx < block_count; idx++) {
 		component_info new_component;
 		new_component.inst_name = block_list[idx].component_data.inst_name;
 		new_component.macro_name = block_list[idx].component_data.macro_name;
 		new_component.place = block_list[idx].component_data.place;
-		new_component.coordinate[0] = 0; //x,y
-		new_component.coordinate[1] = 0; //x,y
-		new_component.orientation = "None";//N=left bottom
+		new_component.coordinate[0] = block_list[idx].coordinate[0]; //x,y
+		new_component.coordinate[1] = block_list[idx].coordinate[1]; //x,y
+		new_component.orientation = block_list[idx].orientation;//N=left bottom
 		output.push_back(new_component);
 	}
-	return output;
+	data_info data_output = input_data_pack_save;
+	data_output.component = output;
+	return data_output;
 }
 
 std::array<int, 2> legalization_method::overlap(BlockInfo blocka, BlockInfo blockb) {

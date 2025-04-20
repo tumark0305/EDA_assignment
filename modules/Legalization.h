@@ -68,6 +68,7 @@ public:
 
 class legalization_controller {
 private:
+    data_info input_data_pack_save;
     legalization_method method;
     float site_width = 0.0;
     float site_height = 0.0;
@@ -83,7 +84,7 @@ public:
     void loss(string _method);
     bool legal();
     float loss_quality_factor();
-    std::vector<component_info> convert_component(); 
+    data_info convert_data_pack(); 
 };
 
 #endif
