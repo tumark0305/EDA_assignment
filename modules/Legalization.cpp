@@ -343,6 +343,9 @@ void legalization_method::abacus() { // return output
                 min_index = i;
             }
         }
+        if (abacus_max_loss > min_cost) {
+            abacus_max_loss = min_cost;
+        }
         placed = all_condition[min_index];
     }
     output.clear();
@@ -389,7 +392,30 @@ void legalization_method::abacus_cal_cost(BlockInfo input_block , int if_atrow) 
 }
 
 BlockInfo legalization_method::combine_block(BlockInfo block_new, BlockInfo block_placed) {
-
+    std::array<int, 2> null_array = { 0,0 };
+    BlockInfo combine_block = block_new;
+    combine_block.sublock.clear();
+    block_new.new_coordinate = {block_placed.coordinate[0] + block_placed.size[0], block_new.coordinate[1] }; 
+    block_new.unprotect_teleport();
+    if (block_new.sublock.empty()) {
+        combine_block.sublock.push_back(block_new);
+    }
+    else {
+        for (const BlockInfo& subblock : block_new.sublock) {
+            combine_block.sublock.push_back(subblock);
+        }
+    }
+    if (block_placed.sublock.empty()) {
+        combine_block.sublock.push_back(block_placed);
+    }
+    else {
+        for (const BlockInfo& subblock : block_placed.sublock) {
+            combine_block.sublock.push_back(subblock);
+        }
+    }
+    combine_block.cal_from_sublock();
+    combine_block.size[1] = 1; 
+    return combine_block;
 }
 
 void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_complex_loss_output,cal_complex_loss_condition
@@ -437,8 +463,24 @@ void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_co
     for (BlockInfo& block : effected_blocks) {
         beforeD += block.global_distance();
     }
-    cal_complex_loss_output = alpha * DL + afterD - beforeD;
-    cal_complex_loss_condition = unpack(placed_mirror0);
+    cal_complex_loss_output = abacus_normal * DL + afterD - beforeD;
+    if (cal_complex_loss_output > abacus_max_loss) {
+        cal_complex_loss_output = abacus_penalty * DL + afterD - beforeD;
+    }
+    std::vector< BlockInfo> unpack_output;
+    cal_complex_loss_condition.clear();
+    for (const BlockInfo& combined : placed_mirror0) {
+        if (combined.sublock.size() == 0) {
+            unpack_output.push_back(combined);
+        }
+        else {
+            for (const BlockInfo& subblock : combined.sublock) {
+                unpack_output.push_back(subblock);
+            }
+        }
+    }
+    cal_complex_loss_condition = unpack_output;
+
     std::vector<bool> oversize;
     for (const BlockInfo& combined : placed_mirror0) {
         oversize.push_back(combined.size[0] > BlockInfo_row);
