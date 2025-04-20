@@ -32,6 +32,7 @@ BlockInfo::BlockInfo(const BlockInfo& other) {
 
 	history_coordinate = other.history_coordinate;
 	tag = other.tag;
+	component_data = other.component_data;
 
 	// ▓`л■ий sublock
 	sublock = other.sublock;
@@ -189,6 +190,7 @@ legalization_controller::legalization_controller(data_info& input_data, float _q
 	input_data_pack_save.component = input_data.component; 
 	input_data_pack_save.specialnet = input_data.specialnet;  
 	input_data_pack_save.header = input_data.header; 
+	
 	quality_alpha = _quality_alpha; 
 	cell_width = _cell_width;
 	cell_height = _cell_height;
@@ -207,10 +209,9 @@ legalization_controller::legalization_controller(data_info& input_data, float _q
 		string block_orientation = input_data.component[i].orientation;
 		BlockInfo block(block_coordinate, block_size, block_orientation, input_data.component[i]);
 		block_list.push_back(block);
-		//std::cout << "register" << block.coordinate[0] << "," << block.coordinate[1] << std::endl;
 	}
 	method.load_data(block_list);
-	std::cout << "hi" << BlockInfo_row << "," << BlockInfo_col << std::endl;
+	
 }
 
 //legalization_method::legalization_method() {}
@@ -313,6 +314,12 @@ data_info legalization_controller::convert_data_pack() {
 	}
 	data_info data_output = input_data_pack_save;
 	data_output.component = output;
+	std::cout << "inst_name-" << output[0].inst_name << std::endl;
+	std::cout << "macro_name-" << output[0].macro_name << std::endl;
+	std::cout << "place-" << output[0].place << std::endl;
+	std::cout << "coordinate[0]-" << output[0].coordinate[0] << std::endl;
+	std::cout << "coordinate[1]-" << output[0].coordinate[1] << std::endl;
+	std::cout << "orientation-" << output[0].orientation << std::endl;
 	return data_output;
 }
 
