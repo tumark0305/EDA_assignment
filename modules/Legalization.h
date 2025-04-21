@@ -2,6 +2,8 @@
 #define LEGALIZATION_H
 
 #include "global_variable.h"
+#include "tqdm.h"
+#include "def_file.h"
 #include <sstream> 
 #include <array>
 #include <cmath>
@@ -71,6 +73,7 @@ public:
 
 class legalization_controller {
 private:
+    unsigned int iter = 0;
     data_info input_data_pack_save;
     legalization_method method;
     std::array<int, 2> site_size = { 0,0 };
@@ -81,7 +84,7 @@ private:
     unsigned int cell_width;
     unsigned int cell_height;
 public:
-    legalization_controller(data_info& input_data, float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height);
+    legalization_controller(def_file input_file, float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height);
     void forward(string _method);
     void loss(string _method);
     bool legal();

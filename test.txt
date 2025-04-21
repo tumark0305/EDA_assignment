@@ -1,34 +1,56 @@
 VERSION 5.8 ;
 DIVIDERCHAR "/" ;
 BUSBITCHARS "[]" ;
-DESIGN Attack_on_Titan ;
+DESIGN  Frieren_Beyond_Journe's_End  ;
 UNITS DISTANCE MICRONS 1000 ;
 
-DIEAREA ( 0 0 ) ( 10000 10000 ) ;
+DIEAREA ( 0 0 ) ( 24000 16800 ) ;
 
-ROW core_SITE_ROW_0 core 0 0 N DO 50 BY 1 STEP 200 0 ;
-ROW core_SITE_ROW_1 core 0 2000 FS DO 50 BY 1 STEP 200 0 ;
-ROW core_SITE_ROW_2 core 0 4000 N DO 50 BY 1 STEP 200 0 ;
-ROW core_SITE_ROW_3 core 0 6000 FS DO 50 BY 1 STEP 200 0 ;
-ROW core_SITE_ROW_4 core 0 8000 N DO 50 BY 1 STEP 200 0 ;
+ROW core_SITE_ROW_0 core 0 0 N DO 60 BY 1 STEP 400 0 ;
+ROW core_SITE_ROW_1 core 0 2400 FS DO 60 BY 1 STEP 400 0 ;
+ROW core_SITE_ROW_2 core 0 4800 N DO 60 BY 1 STEP 400 0 ;
+ROW core_SITE_ROW_3 core 0 7200 FS DO 60 BY 1 STEP 400 0 ;
+ROW core_SITE_ROW_4 core 0 9600 N DO 60 BY 1 STEP 400 0 ;
+ROW core_SITE_ROW_5 core 0 12000 FS DO 60 BY 1 STEP 400 0 ;
+ROW core_SITE_ROW_6 core 0 14400 N DO 60 BY 1 STEP 400 0 ;
 
-COMPONENTS 8 ;
--  Attack Titan 
-  +  PLACED  ( 3900 4000 )  ;
--  Armored Titan 
-  +  PLACED  ( 6900 8000 )  ;
--  Colossal Titan 
-  +  PLACED  ( 8000 8000 )  ;
--  Female Titan 
-  +  PLACED  ( 1050 6000 )  ;
--  Beast Titan 
-  +  PLACED  ( 7250 8000 )  ;
--  Hammer Titan 
-  +  PLACED  ( 0 0 )  ;
--  Jaw Titan 
-  +  PLACED  ( 2500 2000 )  ;
--  Pure Titan 
-  +  PLACED  ( 4250 2000 )  ;
+COMPONENTS 18 ;
+-  Frieren mage 
+  +  PLACED  ( 9600 0 ) N ;
+-  Fern mage 
+  +  PLACED  ( 4400 4800 ) FS ;
+-  Serie mage 
+  +  PLACED  ( 6800 4800 ) FS ;
+-  Flamme mage 
+  +  PLACED  ( 22400 4800 ) FS ;
+-  Lernen mage 
+  +  PLACED  ( 2000 4800 ) FS ;
+-  Sense mage 
+  +  PLACED  ( 11600 0 ) N ;
+-  Denken mage 
+  +  PLACED  ( 1200 9600 ) FS ;
+-  Ubel mage 
+  +  PLACED  ( 12800 9600 ) N ;
+-  Land mage 
+  +  PLACED  ( 17200 14400 ) N ;
+-  Wirbel mage 
+  +  PLACED  ( 5600 4800 ) FS ;
+-  Methode mage 
+  +  PLACED  ( 1600 4800 ) N ;
+-  Richter mage 
+  +  PLACED  ( 0 9600 ) FS ;
+-  Ehre mage 
+  +  PLACED  ( 18800 0 ) N ;
+-  Edel mage 
+  +  PLACED  ( 800 4800 ) FS ;
+-  Kanne mage 
+  +  PLACED  ( 0 14400 ) N ;
+-  Lawine mage 
+  +  PLACED  ( 10000 14400 ) FS ;
+-  Laufen mage 
+  +  PLACED  ( 3200 4800 ) FS ;
+-  Scharf mage 
+  +  PLACED  ( 12800 9600 ) FS ;
 END COMPONENTS
 
 END DESIGN

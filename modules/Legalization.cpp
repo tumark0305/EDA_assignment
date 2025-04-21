@@ -200,11 +200,13 @@ unsigned int BlockInfo_row = 4;
 bool operator==(const BlockInfo& a, const BlockInfo& b) {
 	bool eqglobal = a.global_placement_coordiante == b.global_placement_coordiante;
 	bool eqcoordinate = a.coordinate == b.coordinate;
-	return  eqglobal && eqcoordinate;
+	bool output = eqglobal && eqcoordinate;
+	return  output;
 }
 
-
-legalization_controller::legalization_controller(data_info& input_data, float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height) {//translate data_info to block info
+legalization_controller::legalization_controller(def_file input_file, float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height) {//translate data_info to block info
+	data_info input_data = input_file.data_pack;
+	iter = 0;
 	input_data_pack_save.command = input_data.command;
 	input_data_pack_save.component = input_data.component; 
 	input_data_pack_save.specialnet = input_data.specialnet;  
@@ -214,20 +216,20 @@ legalization_controller::legalization_controller(data_info& input_data, float _q
 	cell_width = _cell_width;
 	cell_height = _cell_height;
 	int diearea_size[2] = { input_data.header.DIEAREA[1][0] - input_data.header.DIEAREA[0][0] ,input_data.header.DIEAREA[1][1] - input_data.header.DIEAREA[0][1] };
-	BlockInfo_row = input_data.command[0].step[0];
-	BlockInfo_col = static_cast<unsigned int>(input_data.command[0].num_size[1] * input_data.command.size());
-	site_size[0] = input_data.command[0].num_size[0];
-	site_size[1] = static_cast<int>(round(diearea_size[1] / BlockInfo_col));
+	site_size[0] = input_file.site_size[0];
+	site_size[1] = input_file.site_size[1];
+	BlockInfo_row = static_cast<unsigned int>(diearea_size[0] / site_size[0]);
+	BlockInfo_col = static_cast<unsigned int>(input_data.command.size());
+	cout << "row,col="<<BlockInfo_row << "," << BlockInfo_col << endl;
+	cout << "site_w,site_c=" << site_size[0] << "," << site_size[1] << endl;
 	block_count = static_cast<unsigned int>(input_data.component.size());
-	std::array<int, 2> block_size = { static_cast<int>(_cell_width),static_cast<int>(_cell_height)};
+	array<int, 2> block_size = { static_cast<int>(_cell_width),static_cast<int>(_cell_height)};
 	for (unsigned  int i = 0; i < block_count; i++) {
 		BlockInfo block(input_data.component[i], block_size, site_size);
 		block_list.push_back(block);
 	}
 	method.load_data(block_list);
 }
-
-//legalization_method::legalization_method() {}
 
 void legalization_method::load_data(std::vector<BlockInfo> input_data) {
 	for (const auto& blk : input_data) {
@@ -240,8 +242,7 @@ void legalization_method::load_data(std::vector<BlockInfo> input_data) {
 bool legalization_controller::legal() {
 	std::vector<int> all_x;
 	std::vector<int> all_y;
-	std::vector<bool> which_overlap;
-
+	
 	for (const auto& block : block_list) {
 		all_x.push_back(block.coordinate[0]);
 		all_x.push_back(block.coordinate[0] + block.size[0]);
@@ -249,40 +250,48 @@ bool legalization_controller::legal() {
 		all_y.push_back(block.coordinate[1]);
 		all_y.push_back(block.coordinate[1] + block.size[1]);
 	}
-
+	bool no_overlap = true;
 	for (size_t a = 0; a < block_list.size(); ++a) {
 		for (size_t b = a + 1; b < block_list.size(); ++b) {
 			std::array<int, 2> overlap_result = method.overlap(block_list[a], block_list[b]);
-			bool is_overlapping = (overlap_result[0] > 0 && overlap_result[1] > 0);
-			which_overlap.push_back(is_overlapping);
+			no_overlap = !(overlap_result[0] > 0 && overlap_result[1] > 0);
+			if (!no_overlap) {
+				break;
+			}
+		}
+		if (!no_overlap) {
+			break;
 		}
 	}
-
+	
 	bool L = *std::min_element(all_x.begin(), all_x.end()) >= 0;
 	bool R = *std::max_element(all_x.begin(), all_x.end()) <= static_cast<int>(BlockInfo_row);
 	bool B = *std::min_element(all_y.begin(), all_y.end()) >= 0;
 	bool T = *std::max_element(all_y.begin(), all_y.end()) <= static_cast<int>(BlockInfo_col);
-
-	bool no_overlap = std::none_of(which_overlap.begin(), which_overlap.end(), [](bool val) { return val; });
-
+	
 	return (L && R && B && T && no_overlap);
 }
 
 void legalization_controller::loss(string _method) {
-
+	
 	loss_datapack_info loss_data_pack;
 	loss_data_pack.legal = legalization_controller::legal();
-
+	
 	loss_data_pack.quality = legalization_controller::loss_quality_factor();
 
 	loss_datapack.push_back(loss_data_pack);
-	std::cout << "legal:" << loss_data_pack.legal << "    ,quality:" << loss_data_pack.quality << std::endl;
+	std::cout << "epoch:"<< iter<<"    legal: " << (loss_data_pack.legal ? "true " : "false")
+		<< "    , quality: " << loss_data_pack.quality << std::endl;
 
 	/*for (int i = 0; i < block_count; i++) {
 		std::cout << "x:" << block_list[i].coordinate[0] << "    ,y:" << block_list[i].coordinate[1] << std::endl;
 		std::cout << "newx:" << block_list[i].new_coordinate[0] << "    ,y:" << block_list[i].new_coordinate[1] << std::endl;
 	}*/
-
+	//cout << "output coord" << endl;
+		//for (const BlockInfo& block : placed) {
+		//	cout << "cooord=" << block.coordinate[0] << "," << block.coordinate[1] << endl;
+		//}
+		//cout << "end coord" << endl;
 
 	if (_method == "spring") {
 	}
@@ -328,18 +337,22 @@ data_info legalization_controller::convert_data_pack() {
 		std::array<int, 2> coord = block_list[idx].site_to_coordiante(block_list[idx].coordinate);
 		new_component.coordinate[0] = coord[0]; //x,y
 		new_component.coordinate[1] = coord[1]; //x,y
-		new_component.orientation = block_list[idx].orientation;//N=left bottom
+		for (int row_idx = 0; row_idx < input_data_pack_save.command.size(); row_idx++) {
+			if (input_data_pack_save.command[row_idx].coordinate[1] == coord[1]) {
+				new_component.orientation = input_data_pack_save.command[row_idx].orientation;//N=left bottom
+			}
+		}
 		output.push_back(new_component);
 	}
 	data_info data_output = input_data_pack_save;
 	data_output.component = output;
-	std::cout << "inst_name-" << output[0].inst_name << std::endl;
-	std::cout << "macro_name-" << output[0].macro_name << std::endl;
-	std::cout << "place-" << output[0].place << std::endl;
-	std::cout << "coordinate[0]-" << output[0].coordinate[0] << std::endl;
-	std::cout << "coordinate[1]-" << output[0].coordinate[1] << std::endl;
-	std::cout << "orientation-" << output[0].orientation << std::endl;
-	
+	//std::cout << "inst_name-" << output[0].inst_name << std::endl;
+	//std::cout << "macro_name-" << output[0].macro_name << std::endl;
+	//std::cout << "place-" << output[0].place << std::endl;
+	//std::cout << "coordinate[0]-" << output[0].coordinate[0] << std::endl;
+	//std::cout << "coordinate[1]-" << output[0].coordinate[1] << std::endl;
+	//std::cout << "orientation-" << output[0].orientation << std::endl;
+	//
 	return data_output;
 }
 
@@ -351,15 +364,15 @@ std::array<int, 2> legalization_method::overlap(BlockInfo blocka, BlockInfo bloc
 	std::array<int, 2> y_range_b = { blockb.coordinate[1], blockb.coordinate[1] + blockb.size[1] };
 
 	// 計算 x, y 方向的重疊長度
-	int x_overlap = std::min(x_range_a[1], x_range_b[1]) - std::max(x_range_a[0], x_range_b[0]);
-	int y_overlap = std::min(y_range_a[1], y_range_b[1]) - std::max(y_range_a[0], y_range_b[0]);
+	int x_overlap = min(x_range_a[1], x_range_b[1]) - max(x_range_a[0], x_range_b[0]);
+	int y_overlap = min(y_range_a[1], y_range_b[1]) - max(y_range_a[0], y_range_b[0]);
 
 	std::array<int, 2> output = { x_overlap, y_overlap };
 	return output;
 }
 
 void legalization_controller::forward(string _method) {
-
+	
 	if (_method == "spring") {
 		for (unsigned int i = 0; i < block_count; i++) {
 			block_list[i].move();
@@ -370,11 +383,14 @@ void legalization_controller::forward(string _method) {
 		for (unsigned  int i = 0; i < block_count; i++) {
 			block_list[i].teleport();
 		}
+		
 		legalization_controller::loss(_method);
 	}
+	iter ++;
 }
 
 void legalization_method::abacus() { // return output
+	
 	placed.clear();
 	std::vector<int> all_x_coord;
 	for (unsigned  int i = 0; i < block_count; i++) {
@@ -386,14 +402,16 @@ void legalization_method::abacus() { // return output
 		[&](int a, int b) {
 			return all_x_coord[a] < all_x_coord[b];
 		});
+	int total = static_cast<int>(sorted_indices.size());  // 設定總數
+	tqdm progress(total, "Processing",50);
 	for (int idx : sorted_indices) {//X由小到大
+		progress.update();
 		std::vector< float> all_cost;
 		std::vector<std::vector< BlockInfo>> all_condition;
 		for (unsigned int option_row = 0; option_row < BlockInfo_col; option_row++) {
 			abacus_cal_cost(block_data_copy0[idx], option_row);
 			all_cost.push_back(abacus_cal_cost_output);
 			all_condition.push_back(abacus_cal_cost_placed_condition);
-			
 		}
 		std::size_t min_index = 0;
 		double min_cost = all_cost[0];
@@ -408,6 +426,7 @@ void legalization_method::abacus() { // return output
 		}
 		
 		placed = all_condition[min_index];
+		
 	}
 	output.clear();
 	for (const auto& _block_orig : block_data_copy0) {
@@ -418,9 +437,11 @@ void legalization_method::abacus() { // return output
 			}
 		}
 	}
+	
 }
 
 void legalization_method::abacus_cal_cost(BlockInfo input_block, int if_atrow) {//return abacus_cal_cost_output,abacus_cal_cost_placed_condition
+	//abacus_cal_cost 再拖
 	placed_mirror0.clear();
 	
 	placed_mirror0 = placed;
@@ -436,15 +457,15 @@ void legalization_method::abacus_cal_cost(BlockInfo input_block, int if_atrow) {
 	for (int touch_idx = 0; touch_idx < placed_mirror1.size(); touch_idx++) {
 		std::array<int, 2> _overlap = overlap(now_block, placed_mirror1[touch_idx]);
 		if (_overlap[0] > 0 && _overlap[1] > 0) {
-			cal_complex_loss(now_block);
+			cal_complex_loss(now_block );
 			abacus_cal_cost_output = cal_complex_loss_output;
 			abacus_cal_cost_placed_condition = cal_complex_loss_condition;
+			
 			found_overlap = true;
 			break;
 		}
 	}
 	if (!found_overlap) {
-		
 		// 計算距離
 		float norm = static_cast<float>(std::sqrt(std::pow((now_block.history_coordinate[0][0] - now_block.coordinate[0])*now_block.site_size[0], 2) +
 			std::pow((now_block.history_coordinate[0][1] - now_block.coordinate[1]) * now_block.site_size[1], 2)));
@@ -452,6 +473,7 @@ void legalization_method::abacus_cal_cost(BlockInfo input_block, int if_atrow) {
 		placed_mirror0.push_back(now_block);  // 添加到已放置區塊列表
 		abacus_cal_cost_placed_condition = placed_mirror0;  // 更新放置條件
 	}
+	
 	//std::cout << "option_row=" << if_atrow << "loss=" << abacus_cal_cost_output << std::endl;
 }
 
@@ -489,7 +511,10 @@ void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_co
 	new_block.tag = "current";
 	std::vector< BlockInfo> effected_blocks;
 	bool changed = true;
+	int placed_mirror0_lastsize=0;
 	while (changed) {
+		if (placed_mirror0_lastsize == placed_mirror0.size()) cout << "placed_mirror0 has same size="<<placed_mirror0_lastsize << endl;
+		placed_mirror0_lastsize = placed_mirror0.size();
 		changed = false;
 		std::vector<BlockInfo> placed_mirror1 = placed_mirror0;
 		for (int i = 0; i < placed_mirror1.size(); i++) {
@@ -559,4 +584,5 @@ void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_co
 	else {
 		cal_complex_loss_output /= new_block.site_size[0];
 	}
+	
 }

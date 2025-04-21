@@ -33,9 +33,10 @@ private:
     void put_component(string new_line);
     void put_specialnet(string new_line);
 public:
-    void read_fromfile(string file_name);
+    bool read_fromfile(string file_name);
     void read_fromdata(data_info data_input);
     void write(string file_name);
+    unsigned int site_size[2] = { 0,0 };
     string head_text = "", components_text = "", specialnets_text = "";
     static data_info data_pack;
     def_file();

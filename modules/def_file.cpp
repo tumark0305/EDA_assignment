@@ -4,12 +4,13 @@ def_file::def_file() {
 	os_info current;
 	path = current.path;
 }
-void def_file::read_fromfile(string file_name) {
+bool def_file::read_fromfile(string file_name) {
 	string input_path = path + "/" + file_name;
 	string line;
 	ifstream file(input_path);
 	if (!file) {
 		cerr << "cannot open file!" << input_path << endl;
+		return 1;
 	}
 
 	while (getline(file, line)) {
@@ -19,8 +20,10 @@ void def_file::read_fromfile(string file_name) {
 			}
 			else {
 				++it;
+				
 			}
 		}
+		//cout << " file line=" << line << endl;
 		input_line(line);
 	}
 	file.close();
@@ -28,8 +31,12 @@ void def_file::read_fromfile(string file_name) {
 	data_pack.command = command;
 	data_pack.component = component;
 	data_pack.specialnet = specialnet;
+	site_size[0] = command[0].step[0];
+	site_size[1] = command[1].coordinate[1] - command[0].coordinate[1];
+	return 0;
 }
 void def_file::input_line(string new_line) {
+	
 	if (new_line.find("ROW") != string::npos) {
 		put_command(new_line);
 	}
@@ -46,6 +53,7 @@ void def_file::input_line(string new_line) {
 		}
 		else {
 			head_text += "\n" + new_line;
+			
 			put_header(new_line);
 		}
 	}
@@ -90,9 +98,17 @@ void def_file::put_header(string new_line) {
 		header.BUSBITCHARS = get_bykeyword(new_line, '"');
 	}
 	else if (new_line.find("DESIGN") != string::npos) {
-		header.DESIGN = get_bykeyword(new_line, ' ');
+		size_t space_pos1 = new_line.find(";");
+		size_t space_pos0 = new_line.find("N");
+		if (space_pos0 > new_line.length() || space_pos1 > new_line.length()) {
+			ostringstream error_message;
+			error_message << "space_pos0 = " << space_pos0 << "\nspace_pos1 = " << space_pos1;
+			throw std::runtime_error(error_message.str());
+		}
+		header.DESIGN = new_line.substr(space_pos0 + 1, space_pos1 - space_pos0 - 1);
 	}
 	else if (new_line.find("UNITS DISTANCE MICRONS") != string::npos) {
+		
 		header.UNITS_DISTANCE_MICRONS = stoi(get_bykeyword(new_line, ' '));
 	}
 	else if (new_line == "PROPERTYDEFINITIONS") {
@@ -102,6 +118,7 @@ void def_file::put_header(string new_line) {
 		PROPERTYDEFINITIONS = false;
 	}
 	else if (PROPERTYDEFINITIONS) {
+		
 		size_t space_pos1 = new_line.rfind(" ");
 		size_t space_pos0 = new_line.find(" ");
 		if (space_pos0 > new_line.length() || space_pos1 > new_line.length()) {
@@ -112,6 +129,7 @@ void def_file::put_header(string new_line) {
 		header.PROPERTYDEFINITIONS = new_line.substr(space_pos0 + 2, space_pos1 - space_pos0 - 2);
 	}
 	else if (new_line.find("DIEAREA") != string::npos) {
+		
 		size_t space_pos1 = new_line.rfind(" ");
 		size_t space_pos0 = new_line.find(" ");
 		if (space_pos0 > new_line.length() || space_pos1 > new_line.length()) {
@@ -310,8 +328,10 @@ void def_file::write(string file_name) {
 	file << "\nCOMPONENTS "+to_string(data_pack.component.size()) + " ;" << "\n";
 	for (int i = 0; i < data_pack.component.size(); i++) {
 		component_info row = data_pack.component[i];
+		int coord[2] = { row.coordinate[0]  , row.coordinate[1] };
+		if (row.orientation == "FS") coord[1] += site_size[1];
 		file << "- "+ row .inst_name +" " + row.macro_name + "" << "\n";
-		file << "  + " + row.place + " ( " + to_string(row.coordinate[0]) + " " + to_string(row.coordinate[1]) + " ) " + row.orientation + " ;" << "\n";
+		file << "  + " + row.place + " ( " + to_string(coord[0]) + " " + to_string(coord[1]) + " ) " + row.orientation + " ;" << "\n";
 	}
 	file << "END COMPONENTS" << "\n\n";
 	file << "END DESIGN" << std::endl;
