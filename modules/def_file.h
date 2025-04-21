@@ -21,7 +21,7 @@ private:
     string line_tag = "OFF";
     string name;
     string get_bykeyword(string word, char key);
-    string buffer = "Uncleaned buffer";
+    string buffer = "";
     bool PROPERTYDEFINITIONS = false;
     header_info header;
     vector< command_info> command;
@@ -34,6 +34,8 @@ private:
     void put_specialnet(string new_line);
 public:
     void read_fromfile(string file_name);
+    void read_fromdata(data_info data_input);
+    void write(string file_name);
     string head_text = "", components_text = "", specialnets_text = "";
     static data_info data_pack;
     def_file();

@@ -25,11 +25,13 @@ public:
     std::array<int, 2> size = { 0,0 };
     std::array<int, 2> step = { 0,0 };
     std::array<int, 2> new_coordinate;
+    std::array<int, 2> site_size;
+    std::array<int, 2> global_placement_coordiante;
     std::vector<std::array<int, 2>> history_coordinate;
     std::string tag;
     std::string orientation;
     std::vector<BlockInfo> sublock;
-    BlockInfo(std::array<int, 2> _coordinate, std::array<int, 2> _size, std::string _orientation, component_info _original_data );
+    BlockInfo(component_info _original_data, std::array<int, 2> _size, std::array<int, 2> site_sizeincoord);
     BlockInfo(const BlockInfo& other); 
     BlockInfo& operator=(const BlockInfo& other);
     std::array<int, 2> clip_coordinate();
@@ -39,6 +41,7 @@ public:
     void unprotect_teleport();
     void cal_from_sublock();
     float global_distance();
+    std::array<int, 2> site_to_coordiante(std::array<int, 2> input_site_coordiante);
 };
 bool operator==(const BlockInfo& a, const BlockInfo& b);
 
@@ -47,9 +50,9 @@ private:
     std::vector< BlockInfo> placed; 
     std::vector<BlockInfo> placed_mirror0;
     std::vector<BlockInfo> block_data_copy0;
-    float abacus_max_loss = 0.0;
+    double abacus_max_loss = 0.0;
     unsigned int block_count = 0;
-    float abacus_current_cost = 999.9;
+    float abacus_current_cost = 999;
     std::vector< BlockInfo> abacus_current_condition;
     float abacus_cal_cost_output = 0.0;
     std::vector< BlockInfo> abacus_cal_cost_placed_condition;
@@ -70,8 +73,7 @@ class legalization_controller {
 private:
     data_info input_data_pack_save;
     legalization_method method;
-    float site_width = 0.0;
-    float site_height = 0.0;
+    std::array<int, 2> site_size = { 0,0 };
     std::vector<loss_datapack_info> loss_datapack;
     unsigned int block_count = 0;
     std::vector<BlockInfo> block_list;
