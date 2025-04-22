@@ -296,7 +296,8 @@ void legalization_controller::loss(string _method) {
 	if (_method == "spring") {
 	}
 	else if (_method == "abacus") {
-		method.abacus();
+		//method.single_abacus(); 
+		method.muti_abacus();
 		if (block_count == method.output.size()) {
 			for (unsigned int i = 0; i < block_count; i++) {
 				block_list[i].new_coordinate[0] = method.output[i][0];
@@ -356,7 +357,7 @@ data_info legalization_controller::convert_data_pack() {
 	return data_output;
 }
 
-std::array<int, 2> legalization_method::overlap(BlockInfo blocka, BlockInfo blockb) {
+std::array<int, 2> legalization_method::overlap(BlockInfo& blocka, BlockInfo& blockb) {
 	std::array<int, 2> x_range_a = { blocka.coordinate[0], blocka.coordinate[0] + blocka.size[0] };
 	std::array<int, 2> y_range_a = { blocka.coordinate[1], blocka.coordinate[1] + blocka.size[1] };
 
@@ -389,7 +390,7 @@ void legalization_controller::forward(string _method) {
 	iter++;
 }
 
-void legalization_method::abacus() { // return output
+void legalization_method::single_abacus() { // return output
 
 	placed.clear();
 	std::vector<int> all_x_coord;
@@ -403,34 +404,32 @@ void legalization_method::abacus() { // return output
 			return all_x_coord[a] < all_x_coord[b];
 		});
 	int total = static_cast<int>(sorted_indices.size());  // 設定總數
+	std::atomic<bool> early_exit(false);
 	tqdm progress(total, "Processing", 30);
 	for (int idx : sorted_indices) {//X由小到大
 		progress.update();
-		std::vector< float> all_cost;
 		std::vector<std::vector< BlockInfo>> all_condition;
-		for (unsigned int option_row = 0; option_row < BlockInfo_col; option_row++) {
-			abacus_cal_cost(block_data_copy0[idx], option_row);
-			all_cost.push_back(abacus_cal_cost_output);
-			all_condition.push_back(abacus_cal_cost_placed_condition);
-		}
+		all_condition.reserve(BlockInfo_col);
 		std::size_t min_index = 0;
-		double min_cost = all_cost[0];
-		for (std::size_t i = 1; i < all_cost.size(); ++i) {
-			if (all_cost[i] < min_cost) {
-				min_cost = all_cost[i];
-				min_index = i;
+		double min_cost = std::numeric_limits<double>::infinity();
+		for (unsigned int option_row = 0; option_row < BlockInfo_col; option_row++) {
+			loss_info cost;
+			abacus_cal_cost(block_data_copy0[idx], option_row, placed, cost, early_exit);
+			all_condition.emplace_back(std::move(cost.condition));
+			if (cost.loss < min_cost) {
+				min_cost = cost.loss;
+				min_index = option_row;
 			}
 		}
 		if (abacus_max_loss > min_cost) {
 			abacus_max_loss = min_cost;
 		}
-
-		placed = all_condition[min_index];
-
+		placed.swap(all_condition[min_index]);
 	}
+	vector<BlockInfo> unpacked = unpack_combined(placed);
 	output.clear();
 	for (const auto& _block_orig : block_data_copy0) {
-		for (const auto& _block_data : placed) {
+		for (const auto& _block_data : unpacked) {
 			if (_block_orig.tag == _block_data.tag) {
 				output.push_back(_block_data.coordinate);
 				break;
@@ -440,44 +439,45 @@ void legalization_method::abacus() { // return output
 
 }
 
-void legalization_method::abacus_cal_cost(BlockInfo input_block, int if_atrow) {//return abacus_cal_cost_output,abacus_cal_cost_placed_condition
-	//abacus_cal_cost 再拖
-	placed_mirror0.clear();
-
-	placed_mirror0 = placed;
-	BlockInfo  now_block = input_block;
+void legalization_method::abacus_cal_cost(BlockInfo now_block, int if_atrow, std::vector< BlockInfo> placed_mirror0, loss_info& output, std::atomic<bool>& early_stop) {
 	now_block.new_coordinate[1] = if_atrow;
 	now_block.teleport();
-	std::vector<BlockInfo> placed_condition;  // 設置放置條件
-	std::vector<BlockInfo> placed_mirror1 = placed_mirror0;  // 複製 _placed_mirror0
-	abacus_current_cost = 999.9f;
-
 	bool found_overlap = false;
 
-	for (int touch_idx = 0; touch_idx < placed_mirror1.size(); touch_idx++) {
-		std::array<int, 2> _overlap = overlap(now_block, placed_mirror1[touch_idx]);
+	for (int touch_idx = static_cast<int>(placed_mirror0.size()) - 1; touch_idx >= 0; touch_idx--) {
+		std::array<int, 2> _overlap = overlap(now_block, placed_mirror0[touch_idx]);
 		if (_overlap[0] > 0 && _overlap[1] > 0) {
-			cal_complex_loss(now_block);
-			abacus_cal_cost_output = cal_complex_loss_output;
-			abacus_cal_cost_placed_condition = cal_complex_loss_condition;
-
+			cal_complex_loss(now_block, placed_mirror0, output, early_stop);
 			found_overlap = true;
 			break;
 		}
 	}
-	if (!found_overlap) {
+	if (!found_overlap && !early_stop) {
 		// 計算距離
 		float norm = static_cast<float>(std::sqrt(std::pow((now_block.history_coordinate[0][0] - now_block.coordinate[0]) * now_block.site_size[0], 2) +
 			std::pow((now_block.history_coordinate[0][1] - now_block.coordinate[1]) * now_block.site_size[1], 2)));
-		abacus_cal_cost_output = abacus_normal * norm;//alpha ==1 
+		output.loss = abacus_normal * norm;//alpha ==1 
 		placed_mirror0.push_back(now_block);  // 添加到已放置區塊列表
-		abacus_cal_cost_placed_condition = placed_mirror0;  // 更新放置條件
+		output.condition = placed_mirror0;  // 更新放置條件
 	}
-
-	//std::cout << "option_row=" << if_atrow << "loss=" << abacus_cal_cost_output << std::endl;
 }
 
-BlockInfo legalization_method::combine_block(BlockInfo block_new, BlockInfo block_placed) {
+std::vector<BlockInfo> legalization_method::unpack_combined(std::vector<BlockInfo>& combined_vector) {
+	std::vector< BlockInfo> unpack_output;
+	for (const BlockInfo& combined : combined_vector) {
+		if (combined.sublock.size() == 0) {
+			unpack_output.push_back(combined);
+		}
+		else {
+			for (const BlockInfo& subblock : combined.sublock) {
+				unpack_output.push_back(subblock);
+			}
+		}
+	}
+	return unpack_output;
+}
+
+BlockInfo legalization_method::combine_block(BlockInfo& block_new, BlockInfo& block_placed) {
 	std::array<int, 2> null_array = { 0,0 };
 	BlockInfo combine_block = block_new;
 	combine_block.sublock.clear();
@@ -505,28 +505,33 @@ BlockInfo legalization_method::combine_block(BlockInfo block_new, BlockInfo bloc
 	return combine_block;
 }
 
-void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_complex_loss_output,cal_complex_loss_condition
+void legalization_method::cal_complex_loss(BlockInfo& now_block, std::vector< BlockInfo>& placed_mirror0, loss_info& output, std::atomic<bool>& early_stop) {//return cal_complex_loss_output,cal_complex_loss_condition
 	string save_tag = now_block.tag;
 	BlockInfo new_block = now_block;
 	new_block.tag = "current";
-	std::vector< BlockInfo> effected_blocks;
+	float beforeD = 0.0;
 	bool changed = true;
-	int placed_mirror0_lastsize = 0;
 	while (changed) {
-		if (placed_mirror0_lastsize == placed_mirror0.size()) cout << "placed_mirror0 has same size=" << placed_mirror0_lastsize << endl;
-		placed_mirror0_lastsize = placed_mirror0.size();
 		changed = false;
-		std::vector<BlockInfo> placed_mirror1 = placed_mirror0;
-		for (int i = placed_mirror1.size() - 1; i >= 0; i--) {
-			std::array<int, 2> _overlap = overlap(new_block, placed_mirror1[i]);
+		for (int i = static_cast<int>(placed_mirror0.size()) - 1; i >= 0; i--) {
+			if (early_stop) break;
+			std::array<int, 2> _overlap = overlap(new_block, placed_mirror0[i]);
 			if (_overlap[0] > 0 && _overlap[1] > 0) {
 				changed = true;
-				effected_blocks.push_back(placed_mirror1[i]);
+				if (placed_mirror0[i].sublock.empty()) {
+					beforeD += placed_mirror0[i].global_distance();
+				}
+				else {
+					for (BlockInfo& subblock : placed_mirror0[i].sublock) {
+						beforeD += subblock.global_distance();
+					}
+				}
+				BlockInfo rmblk = placed_mirror0[i];
 				placed_mirror0.erase(
-					std::remove(placed_mirror0.begin(), placed_mirror0.end(), placed_mirror1[i]),
+					std::remove(placed_mirror0.begin(), placed_mirror0.end(), rmblk),
 					placed_mirror0.end()
 				);
-				new_block = combine_block(new_block, placed_mirror1[i]);
+				new_block = combine_block(new_block, rmblk);
 				int sum_vector = 0;
 				for (int subidx = 0; subidx < new_block.sublock.size(); subidx++) {
 					sum_vector += new_block.sublock[subidx].history_coordinate[0][0] - new_block.sublock[subidx].coordinate[0];
@@ -537,53 +542,103 @@ void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_co
 				break;
 			}
 		}
+		if (early_stop) break;
+	}
+	if (!early_stop) {
+		float afterD = 0.0;
+		float DL = 0.0;
+		for (BlockInfo& _sublock : new_block.sublock) {
+			if (_sublock.tag == "current") {
+				DL += _sublock.global_distance();
+				_sublock.tag = save_tag; // 假設 _save_tag 已經初始化
+			}
+			else {
+				afterD += _sublock.global_distance();
+			}
+		}
+		placed_mirror0.push_back(new_block);
+		output.loss = abacus_normal * DL + afterD - beforeD;
+		if (output.loss > abacus_max_loss) {
+			output.loss = abacus_penalty * DL + afterD - beforeD;
+		}
+
+		//output.condition = placed_mirror0;// slow 
+		output.condition = std::move(placed_mirror0);
+		bool any_oversize = false;
+
+		for (const BlockInfo& combined : output.condition) {
+			any_oversize = combined.size[0] > static_cast<int>(BlockInfo_row);
+			if (any_oversize) break;
+		}
+
+		if (any_oversize) {
+			output.loss = std::numeric_limits<float>::infinity();
+		}
+		else {
+			output.loss /= new_block.site_size[0];
+		}
+	}
+}
+
+void legalization_method::muti_abacus() { // return output
+	placed.clear();
+	std::vector<int> all_x_coord;
+	for (unsigned int i = 0; i < block_count; i++) {
+		all_x_coord.push_back(block_data_copy0[i].coordinate[0]);
+	}
+	std::vector<int> sorted_indices(block_count);
+	std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
+	std::sort(sorted_indices.begin(), sorted_indices.end(),
+		[&](int a, int b) {
+			return all_x_coord[a] < all_x_coord[b];
+		});
+	int total = static_cast<int>(sorted_indices.size());  // 設定總數
+	std::vector<loss_info> loss_result(BlockInfo_col); 
+	tqdm progress(total, "Processing", 30);
+	
+	for (int idx : sorted_indices) {
+		progress.update();
+		// 平行處理每個 row
+		int zero_atrow = 0;
+		std::atomic<bool> early_exit(false);
+#pragma omp parallel for shared(early_exit)
+		for (int option_row = 0; option_row < static_cast<int>(BlockInfo_col); option_row++) {
+			if (early_exit.load()) continue;
+			abacus_cal_cost(block_data_copy0[idx], option_row, placed, loss_result[option_row], early_exit);
+			if (loss_result[option_row].loss == 0.0f) {
+				early_exit.store(true);
+				zero_atrow = option_row;
+			}
+		}
+		loss_info* best_cost = &loss_result[0];
+		float min_cost = std::numeric_limits<float>::infinity();
+		std::size_t min_index = 0;
+		if (early_exit) {
+			min_cost = loss_result[zero_atrow].loss;
+			best_cost = &loss_result[zero_atrow];
+		}
+		else {
+			for (std::size_t i = 0; i < loss_result.size(); ++i) {
+				if (loss_result[i].loss < min_cost) {
+					best_cost = &loss_result[i];
+					min_cost = best_cost->loss;
+				}
+			}
+		}
+		if (min_cost > abacus_max_loss) {
+			abacus_max_loss = min_cost;
+		}
+		placed.swap(best_cost->condition);
 	}
 
-	float afterD = 0.0;
-	float DL = 0.0;
-	for (BlockInfo& _sublock : new_block.sublock) {
-		if (_sublock.tag == "current") {
-			DL += _sublock.global_distance();
-			_sublock.tag = save_tag; // 假設 _save_tag 已經初始化
-		}
-		else {
-			afterD += _sublock.global_distance();
-		}
-	}
-	placed_mirror0.push_back(new_block);
-	std::vector< BlockInfo> combined_condition = placed_mirror0;
-	float beforeD = 0.0;
-	for (BlockInfo& block : effected_blocks) {
-		beforeD += block.global_distance();
-	}
-	cal_complex_loss_output = abacus_normal * DL + afterD - beforeD;
-	if (cal_complex_loss_output > abacus_max_loss) {
-		cal_complex_loss_output = abacus_penalty * DL + afterD - beforeD;
-		abacus_max_loss = cal_complex_loss_output;
-	}
-	std::vector< BlockInfo> unpack_output;
-	cal_complex_loss_condition.clear();
-	for (const BlockInfo& combined : placed_mirror0) {
-		if (combined.sublock.size() == 0) {
-			unpack_output.push_back(combined);
-		}
-		else {
-			for (const BlockInfo& subblock : combined.sublock) {
-				unpack_output.push_back(subblock);
+	std::vector<BlockInfo> unpacked = unpack_combined(placed);
+	output.clear();
+	for (const auto& _block_orig : block_data_copy0) {
+		for (const auto& _block_data : unpacked) {
+			if (_block_orig.tag == _block_data.tag) {
+				output.push_back(_block_data.coordinate);
+				break;
 			}
 		}
 	}
-	cal_complex_loss_condition = unpack_output;
-	std::vector<bool> oversize;
-	for (const BlockInfo& combined : placed_mirror0) {
-		oversize.push_back(combined.size[0] > static_cast<int>(BlockInfo_row));
-	}
-
-	if (std::any_of(oversize.begin(), oversize.end(), [](bool v) { return v; })) {
-		cal_complex_loss_output = std::numeric_limits<float>::infinity();
-	}
-	else {
-		cal_complex_loss_output /= new_block.site_size[0];
-	}
-
 }

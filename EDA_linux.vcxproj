@@ -35,9 +35,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include="case1.def" />
+    <None Include="case2.def" />
+    <None Include="case3.def" />
+    <None Include="case4.def" />
     <None Include="CS12x12.def" />
     <None Include="CS8x8.def" />
     <None Include="Makefile" />
+    <None Include="super1.def" />
+    <None Include="super2.def" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include.h" />
@@ -54,6 +60,9 @@
     <ClCompile Include="modules\Legalization.cpp" />
     <ClCompile Include="modules\os_info.cpp" />
     <ClCompile Include="modules\tqdm.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="readme.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{e4c5edb3-eecb-4cee-a834-550e093bc8c9}</ProjectGuid>
@@ -106,7 +115,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <RemoteBuildCommandLine>make</RemoteBuildCommandLine>
     <RemoteCleanCommandLine>make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>genPlot</RemoteBuildOutputs>
+    <RemoteBuildOutputs>legalizer</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
