@@ -1,7 +1,7 @@
 #include "include.h"
 
-string input_file_name = "super1.def";
-//string input_file_name = "case1.def";
+//string input_file_name = "super1.def";
+string input_file_name = "case1.def";
 string output_file_name = "output.gp";
 unsigned int cell_width = 2;
 unsigned int cell_height = 1;

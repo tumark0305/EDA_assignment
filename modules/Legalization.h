@@ -58,8 +58,6 @@ private:
     std::vector< BlockInfo> abacus_current_condition;
     float abacus_cal_cost_output = 0.0;
     std::vector< BlockInfo> abacus_cal_cost_placed_condition;
-    float cal_complex_loss_output = 0.0;
-    std::vector< BlockInfo> cal_complex_loss_condition;
     void cal_complex_loss(BlockInfo now_block);
     void abacus_cal_cost(BlockInfo input_block, int if_atrow);
     std::vector<BlockInfo> unpack_combined(std::vector<BlockInfo> combined_vector);
