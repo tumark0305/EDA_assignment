@@ -41,14 +41,19 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include.h" />
-    <ClInclude Include="modules\final_file.h" />
+    <ClInclude Include="modules\def_file.h" />
+    <ClInclude Include="modules\global_variable.h" />
+    <ClInclude Include="modules\Legalization.h" />
     <ClInclude Include="modules\os_info.h" />
+    <ClInclude Include="modules\tqdm.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="macro.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="modules\final_file.cpp" />
+    <ClCompile Include="modules\def_file.cpp" />
+    <ClCompile Include="modules\Legalization.cpp" />
     <ClCompile Include="modules\os_info.cpp" />
+    <ClCompile Include="modules\tqdm.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{e4c5edb3-eecb-4cee-a834-550e093bc8c9}</ProjectGuid>

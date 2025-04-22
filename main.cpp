@@ -1,15 +1,35 @@
 #include "include.h"
 
-string input_file_name = "CS12x12.def";
+string input_file_name = "case1.def";
 string output_file_name = "output.gp";
-unsigned int component_size[2] = { 7100, 6600 };
+unsigned int cell_width = 10;
+unsigned int cell_height = 1;
+float quality_alpha = 1.0;
+unsigned int component_size[2] = {0,0};
 int main(int argc, char* argv[]) {
-    if (get_parameters(argc, argv)) {
+    /*if (get_parameters(argc, argv)) {
         return 1;
     }
-    final_file file;
-    file.read_fromfile(input_file_name);
     plot_info plot(file.data_pack, component_size);
     plot.write(output_file_name);
+    */
+
+    def_file file;
+    if (file.read_fromfile(input_file_name)) return 1;
+    
+    legalization_controller legalization(file, quality_alpha, cell_width,cell_height);
+    cout << "training :" << endl;
+    legalization.forward("abacus");//ep0  init
+    legalization.forward("abacus");//ep1 will output first result
+    legalization.forward("abacus");
+    data_info data_pack_output = legalization.convert_data_pack();
+    cout << "writing" << endl;
+    component_size[0] = file.site_size[0] * cell_width;
+    component_size[1] = file.site_size[1] * cell_height;
+    plot_info plot(data_pack_output, component_size);
+    plot.write(output_file_name);
+    file.read_fromdata(data_pack_output);
+    file.write("test.txt");
+    
     return 0;
 }

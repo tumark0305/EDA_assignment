@@ -3,8 +3,11 @@
 
 #ifndef INCLUDE_H
 #define INCLUDE_H
+#include "modules/global_variable.h"
 #include "modules/os_info.h"
-#include "modules/final_file.h"
+#include "modules/def_file.h"
+#include "modules/Legalization.h"
+
 
 #include <iostream>
 #include <fstream>
@@ -15,11 +18,16 @@
 #include <stdexcept>
 #include <sstream>
 #include <array>
+
 using namespace std;
 extern string input_file_name;
 extern string output_file_name;
-extern unsigned int component_size[2];
+extern unsigned int cell_width;
+extern float quality_alpha;
+extern unsigned int cell_height;
+
 bool get_parameters(int argc, char* argv[]);
+
 
 class plot_info {
 private:
@@ -32,6 +40,4 @@ public:
     void prt();
     void write(string file_name);
 };
-
-
 #endif

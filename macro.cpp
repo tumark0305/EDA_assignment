@@ -2,12 +2,12 @@
 
 bool get_parameters(int argc, char* argv[]) {
     if (argc != 5) {
-        cerr << "Usage: " << argv[0] << " <MSSC width> <MSSC height> <input file> <output file>" << endl;
+        cerr << "Usage: " << argv[0] << " <cell width> <alpha> <input file> <output file>" << endl;
         return true;
     }
     else {
-        component_size[0] = stoi(argv[1]);
-        component_size[1] = stoi(argv[2]);
+        cell_width = stoi(argv[1]);
+        quality_alpha = stof(argv[2]);
         input_file_name = argv[3];
         output_file_name = argv[4];
         return false;
@@ -35,7 +35,7 @@ string plot_info::convert_plot() {
         output += "set object " + to_string(tag_counter) + " rect from ";
         output += to_string(data.component[component_index].coordinate[0]) + "," + to_string(data.component[component_index].coordinate[1]) + " to ";
         output += to_string(data.component[component_index].coordinate[0] + component_size[0]) + "," + to_string(data.component[component_index].coordinate[1] + component_size[1]) + " lw 1 fs solid fc rgb \"#c080ff\"\n";
-        output += "set label \"" + data.component[component_index].tag + "\" at ";
+        output += "set label \"" + data.component[component_index].inst_name + "\" at ";
         output += to_string(data.component[component_index].coordinate[0] + name_offset[0]) + "," + to_string(data.component[component_index].coordinate[1] + name_offset[1]) + " center\n";
         tag_counter++;
     }
@@ -52,7 +52,7 @@ string plot_info::convert_plot() {
         if (data.specialnet[specialnet_index].indirect_coordinate[1] == data.specialnet[specialnet_index].coordinate[1]) {
             LB[0] = data.specialnet[specialnet_index].coordinate[0];//x direction
             LB[1] = data.specialnet[specialnet_index].coordinate[1] - half_width;
-            RT[0] = data.specialnet[specialnet_index].indirect_coordinate[0];
+            RT[0] = data.specialnet[specialnet_index].indirect_coordinate[0]; 
             RT[1] = data.specialnet[specialnet_index].coordinate[1] + half_width;
             TEXT[0] = data.specialnet[specialnet_index].coordinate[0];
             TEXT[1] = data.specialnet[specialnet_index].coordinate[1];
