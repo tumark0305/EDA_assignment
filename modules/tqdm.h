@@ -2,7 +2,9 @@
 #define TQDM_H
 #include <iostream>
 #include <chrono>
-#include <thread>
+#include <string>
+#include <sstream>
+#include <iomanip> 
 
 class tqdm {
 private:
@@ -10,7 +12,7 @@ private:
     int current;  // 當前進度
     int bar_length;  // 進度條的長度
     std::string prefix;  // 進度條前綴
-
+    std::chrono::steady_clock::time_point start_time; 
 public:
     tqdm(int total, const std::string& prefix = "", int bar_length = 50);
     void update(int step = 1);

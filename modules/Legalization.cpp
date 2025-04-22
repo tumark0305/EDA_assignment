@@ -426,7 +426,6 @@ void legalization_method::abacus() { // return output
 		}
 
 		placed = all_condition[min_index];
-
 	}
 	output.clear();
 	for (const auto& _block_orig : block_data_copy0) {
@@ -511,10 +510,7 @@ void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_co
 	new_block.tag = "current";
 	std::vector< BlockInfo> effected_blocks;
 	bool changed = true;
-	int placed_mirror0_lastsize = 0;
 	while (changed) {
-		if (placed_mirror0_lastsize == placed_mirror0.size()) cout << "placed_mirror0 has same size=" << placed_mirror0_lastsize << endl;
-		placed_mirror0_lastsize = placed_mirror0.size();
 		changed = false;
 		std::vector<BlockInfo> placed_mirror1 = placed_mirror0;
 		for (int i = placed_mirror1.size() - 1; i >= 0; i--) {
@@ -585,5 +581,4 @@ void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_co
 	else {
 		cal_complex_loss_output /= new_block.site_size[0];
 	}
-
 }
