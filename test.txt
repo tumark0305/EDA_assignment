@@ -14,21 +14,21 @@ ROW core_SITE_ROW_4 core 0 8000 N DO 50 BY 1 STEP 200 0 ;
 
 COMPONENTS 8 ;
 -  Attack Titan 
-  +  PLACED  ( 2000 4000 ) N ;
+  +  PLACED  ( 3800 4000 ) N ;
 -  Armored Titan 
-  +  PLACED  ( 6000 4000 ) N ;
+  +  PLACED  ( 4600 8000 ) N ;
 -  Colossal Titan 
-  +  PLACED  ( 6000 8000 ) N ;
+  +  PLACED  ( 8200 8000 ) N ;
 -  Female Titan 
-  +  PLACED  ( 600 8000 ) FS ;
+  +  PLACED  ( 1000 8000 ) FS ;
 -  Beast Titan 
-  +  PLACED  ( 6000 4000 ) FS ;
+  +  PLACED  ( 6400 8000 ) N ;
 -  Hammer Titan 
   +  PLACED  ( 0 0 ) N ;
 -  Jaw Titan 
-  +  PLACED  ( 2000 4000 ) FS ;
+  +  PLACED  ( 2400 4000 ) FS ;
 -  Pure Titan 
-  +  PLACED  ( 4600 8000 ) FS ;
+  +  PLACED  ( 4200 4000 ) FS ;
 END COMPONENTS
 
 END DESIGN

@@ -3,7 +3,7 @@
 //string input_file_name = "super1.def";
 string input_file_name = "case1.def";
 string output_file_name = "output.gp";
-unsigned int cell_width = 2;
+unsigned int cell_width = 9;
 unsigned int cell_height = 1;
 float quality_alpha = 1.0;
 unsigned int component_size[2] = {0,0};

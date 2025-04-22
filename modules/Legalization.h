@@ -9,6 +9,9 @@
 #include <cmath>
 #include <algorithm>
 #include <numeric>
+#include <limits>
+#include <thread>
+#include <mutex>
 
 struct loss_datapack_info {
     float quality = 9999.0;
@@ -47,26 +50,26 @@ public:
 };
 bool operator==(const BlockInfo& a, const BlockInfo& b);
 
+struct loss_info {
+    double loss = 0.0;
+    std::vector< BlockInfo> condition;
+};
+
 class legalization_method {
 private:
     std::vector< BlockInfo> placed; 
-    std::vector<BlockInfo> placed_mirror0;
     std::vector<BlockInfo> block_data_copy0;
     double abacus_max_loss = 0.0;
     unsigned int block_count = 0;
-    float abacus_current_cost = 999;
-    std::vector< BlockInfo> abacus_current_condition;
-    float abacus_cal_cost_output = 0.0;
-    std::vector< BlockInfo> abacus_cal_cost_placed_condition;
-    void cal_complex_loss(BlockInfo now_block);
-    void abacus_cal_cost(BlockInfo input_block, int if_atrow);
-    std::vector<BlockInfo> unpack_combined(std::vector<BlockInfo> combined_vector);
-    BlockInfo combine_block(BlockInfo block_new , BlockInfo block_placed);
+    loss_info cal_complex_loss(BlockInfo& now_block, std::vector< BlockInfo>& placed_mirror0); 
+    loss_info abacus_cal_cost(BlockInfo now_block, int if_atrow, std::vector< BlockInfo> placed_mirror0); 
+    std::vector<BlockInfo> unpack_combined(std::vector<BlockInfo>& combined_vector);
+    BlockInfo combine_block(BlockInfo& block_new , BlockInfo& block_placed);
 public:
     legalization_method() = default;
-    std::array<int, 2> overlap(BlockInfo blocka, BlockInfo blockb);
+    std::array<int, 2> overlap(BlockInfo& blocka, BlockInfo& blockb);
     void load_data(std::vector<BlockInfo> input_data);
-    void abacus();
+    void single_abacus();
     std::vector<std::array<int, 2>> output;
 };
 
