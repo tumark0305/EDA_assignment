@@ -61,8 +61,8 @@ private:
     std::vector<BlockInfo> block_data_copy0;
     double abacus_max_loss = 0.0;
     unsigned int block_count = 0;
-    loss_info cal_complex_loss(BlockInfo& now_block, std::vector< BlockInfo>& placed_mirror0); 
-    loss_info abacus_cal_cost(BlockInfo now_block, int if_atrow, std::vector< BlockInfo> placed_mirror0); 
+    void cal_complex_loss(BlockInfo& now_block, std::vector< BlockInfo>& placed_mirror0 , loss_info& output, std::atomic<bool>& early_stop );
+    void abacus_cal_cost(BlockInfo now_block, int if_atrow, std::vector< BlockInfo> placed_mirror0, loss_info& output, std::atomic<bool>& early_stop );
     std::vector<BlockInfo> unpack_combined(std::vector<BlockInfo>& combined_vector);
     BlockInfo combine_block(BlockInfo& block_new , BlockInfo& block_placed);
 public:
@@ -70,6 +70,7 @@ public:
     std::array<int, 2> overlap(BlockInfo& blocka, BlockInfo& blockb);
     void load_data(std::vector<BlockInfo> input_data);
     void single_abacus();
+    void muti_abacus();
     std::vector<std::array<int, 2>> output;
 };
 
