@@ -427,9 +427,10 @@ void legalization_method::abacus() { // return output
 
 		placed = all_condition[min_index];
 	}
+	vector<BlockInfo> unpacked = unpack_combined(placed);
 	output.clear();
 	for (const auto& _block_orig : block_data_copy0) {
-		for (const auto& _block_data : placed) {
+		for (const auto& _block_data : unpacked) {
 			if (_block_orig.tag == _block_data.tag) {
 				output.push_back(_block_data.coordinate);
 				break;
@@ -442,7 +443,6 @@ void legalization_method::abacus() { // return output
 void legalization_method::abacus_cal_cost(BlockInfo input_block, int if_atrow) {//return abacus_cal_cost_output,abacus_cal_cost_placed_condition
 	//abacus_cal_cost ¦A©ì
 	placed_mirror0.clear();
-
 	placed_mirror0 = placed;
 	BlockInfo  now_block = input_block;
 	now_block.new_coordinate[1] = if_atrow;
@@ -474,6 +474,21 @@ void legalization_method::abacus_cal_cost(BlockInfo input_block, int if_atrow) {
 	}
 
 	//std::cout << "option_row=" << if_atrow << "loss=" << abacus_cal_cost_output << std::endl;
+}
+
+std::vector<BlockInfo> legalization_method::unpack_combined(std::vector<BlockInfo> combined_vector) {
+	std::vector< BlockInfo> unpack_output;
+	for (const BlockInfo& combined : combined_vector) {
+		if (combined.sublock.size() == 0) {
+			unpack_output.push_back(combined);
+		}
+		else {
+			for (const BlockInfo& subblock : combined.sublock) {
+				unpack_output.push_back(subblock);
+			}
+		}
+	}
+	return unpack_output;
 }
 
 BlockInfo legalization_method::combine_block(BlockInfo block_new, BlockInfo block_placed) {
@@ -557,19 +572,9 @@ void legalization_method::cal_complex_loss(BlockInfo now_block) {//return cal_co
 		cal_complex_loss_output = abacus_penalty * DL + afterD - beforeD;
 		abacus_max_loss = cal_complex_loss_output;
 	}
-	std::vector< BlockInfo> unpack_output;
 	cal_complex_loss_condition.clear();
-	for (const BlockInfo& combined : placed_mirror0) {
-		if (combined.sublock.size() == 0) {
-			unpack_output.push_back(combined);
-		}
-		else {
-			for (const BlockInfo& subblock : combined.sublock) {
-				unpack_output.push_back(subblock);
-			}
-		}
-	}
-	cal_complex_loss_condition = unpack_output;
+	//cal_complex_loss_condition = unpack_combined(placed_mirror0);
+	cal_complex_loss_condition = placed_mirror0;
 	std::vector<bool> oversize;
 	for (const BlockInfo& combined : placed_mirror0) {
 		oversize.push_back(combined.size[0] > static_cast<int>(BlockInfo_row));

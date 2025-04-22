@@ -62,6 +62,7 @@ private:
     std::vector< BlockInfo> cal_complex_loss_condition;
     void cal_complex_loss(BlockInfo now_block);
     void abacus_cal_cost(BlockInfo input_block, int if_atrow);
+    std::vector<BlockInfo> unpack_combined(std::vector<BlockInfo> combined_vector);
     BlockInfo combine_block(BlockInfo block_new , BlockInfo block_placed);
 public:
     legalization_method() = default;
