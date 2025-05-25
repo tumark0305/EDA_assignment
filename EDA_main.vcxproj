@@ -85,22 +85,36 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <RemoteBuildCommandLine>make</RemoteBuildCommandLine>
     <RemoteCleanCommandLine>make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>genPlot</RemoteBuildOutputs>
+    <RemoteBuildOutputs>legalizer</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="CS12x12.def" />
-    <None Include="CS8x8.def" />
     <None Include="cuda_include.cuh" />
     <None Include="cuda_macro.cu" />
     <None Include="cuda_main.cu" />
     <None Include="Makefile" />
+    <None Include="pic20x20.in" />
+    <None Include="pic5x5.in" />
+    <None Include="pic60x60.in" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include.h" />
+    <ClInclude Include="modules\def_file.h" />
+    <ClInclude Include="modules\global_variable.h" />
+    <ClInclude Include="modules\Legalization.h" />
+    <ClInclude Include="modules\os_info.h" />
+    <ClInclude Include="modules\PIC.h" />
+    <ClInclude Include="modules\PIC_file.h" />
+    <ClInclude Include="modules\tqdm.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="macro.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="modules\def_file.cpp" />
+    <ClCompile Include="modules\Legalization.cpp" />
+    <ClCompile Include="modules\os_info.cpp" />
+    <ClCompile Include="modules\PIC.cpp" />
+    <ClCompile Include="modules\PIC_file.cpp" />
+    <ClCompile Include="modules\tqdm.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

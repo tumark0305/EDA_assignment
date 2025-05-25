@@ -3,11 +3,11 @@ CC = g++
 CFLAGS = -O3 -arch=sm_50
 LDFLAGS = -std=c++11 -O3 -g -lm
 SRC_CUDA = cuda_main.cu cuda_macro.cu
-SRC_CPP = *.cpp
+SRC_CPP = *.cpp modules/*.cpp
 
 OBJ_CUDA = cuda_main.o cuda_macro.o
-OBJ_CPP = main.cpp macro.cpp
-OUTPUT = genPlot
+OBJ_CPP = *.cpp modules/*.cpp
+OUTPUT = legalizer
 
 all: $(OUTPUT)
 $(OBJ_CUDA): %.o: %.cu

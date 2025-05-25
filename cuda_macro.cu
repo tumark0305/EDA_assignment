@@ -26,3 +26,4 @@ void GPU_info::prt() {
     std::cout << "sharedMemPerBlock" << data.sharedMemPerBlock / 1024.0 << " KB" << std::endl;
     std::cout << "totalGlobalMem" << data.totalGlobalMem / (1024.0 * 1024.0) << " MB" << std::endl;
 }
+
