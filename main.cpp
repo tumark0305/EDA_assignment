@@ -7,6 +7,10 @@ int main(int argc, char* argv[]) {
     //}
     PIC_file file;
     if (file.read_fromfile(input_file_name)) return 1;
-    
+    PIC project(file);
+    project.direct_connect();
+    cout << "loss: " << project.loss() << endl;
+    file.read_fromdata(project.data);
+    file.write_tofile(output_file_name);
     return 0;
 }

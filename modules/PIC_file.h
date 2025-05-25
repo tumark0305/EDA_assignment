@@ -19,7 +19,7 @@ private:
 	string current_path;
 	string source_text;
 	vector<string> split(string input_word); 
-	void new_line(string data); 
+	void new_line(string new_line_data);
 public:
 	int grid[2];
 	int propagation_loss;
@@ -29,6 +29,8 @@ public:
 	vector<net_info> data;
 	PIC_file();
 	bool read_fromfile(string input_file_name);
+	void write_tofile(string output_file_name);
+	bool read_fromdata(vector<net_info> input_data);
 };
 
 #endif

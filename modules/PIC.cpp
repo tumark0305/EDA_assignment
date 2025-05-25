@@ -1,5 +1,7 @@
 #include "PIC.h"
 
+#define solve_limit 25
+
 PIC::PIC(PIC_file input) {
 	header = input;
 	data = input.data;
@@ -203,4 +205,113 @@ double PIC::loss() {
         cross * header.crossing_loss +
         bend * header.bending_loss;
     return total_loss;
+}
+
+vector<net_info> PIC::best_direct_connect_in_list(vector<net_info> pin_list) {
+    vector<net_info> output = pin_list;
+    vector<vector<vector<array<int, 2>>>> all_options;
+
+    for (const auto& net : pin_list) {
+        all_options.push_back(direct_connection(net.pin_coordinate));
+    }
+
+    size_t N = pin_list.size();
+    int best_cross_count = INT_MAX;
+    vector<vector<array<int, 2>>> best_routing(N);
+
+    for (int selector = 0; selector < (1 << N); ++selector) {
+        for (size_t i = 0; i < N; ++i) {
+            pin_list[i].line_coordinate = all_options[i][(selector >> i) & 1];
+        }
+
+        int total_cross = 0;
+        for (size_t i = 0; i < N; ++i) {
+            for (size_t j = i + 1; j < N; ++j) {
+                total_cross += cross_at(pin_list[i], pin_list[j]).size();
+            }
+        }
+
+        if (total_cross < best_cross_count) {
+            best_cross_count = total_cross;
+            for (size_t i = 0; i < N; ++i) {
+                best_routing[i] = pin_list[i].line_coordinate;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < N; ++i) {
+        output[i].line_coordinate = best_routing[i];
+    }
+    return output;
+}
+
+vector<net_info> PIC::from_smallest_direct_connect_in_list(vector<net_info> pin_list) {
+    vector<net_info> output;
+    vector<double> distances;
+
+    for (const auto& net : pin_list) {
+        double dx = net.pin_coordinate[0][0] - net.pin_coordinate[1][0];
+        double dy = net.pin_coordinate[0][1] - net.pin_coordinate[1][1];
+        distances.push_back(sqrt(dx * dx + dy * dy));
+    }
+
+    vector<size_t> sorted_indices(distances.size());
+    iota(sorted_indices.begin(), sorted_indices.end(), 0);
+    sort(sorted_indices.begin(), sorted_indices.end(), [&](size_t a, size_t b) {
+        return distances[a] < distances[b];
+        });
+
+    for (size_t idx : sorted_indices) {
+        net_info original_net = pin_list[idx];
+        auto route_options = direct_connection(original_net.pin_coordinate);
+        vector<int> cross_counts;
+
+        for (const auto& option : route_options) {
+            net_info test_net = original_net;
+            test_net.line_coordinate = option;
+            int cross_count = 0;
+            for (const auto& placed : output) {
+                cross_count += cross_at(test_net, placed).size();
+            }
+            cross_counts.push_back(cross_count);
+        }
+
+        int best_index = distance(cross_counts.begin(), min_element(cross_counts.begin(), cross_counts.end()));
+        original_net.line_coordinate = route_options[best_index];
+        output.push_back(original_net);
+    }
+
+    return output;
+}
+
+void PIC::direct_connect() {
+    if (data.size() < solve_limit) { 
+        data = best_direct_connect_in_list(data);
+    }
+    else {
+        vector<net_info> buffer = from_smallest_direct_connect_in_list(data);
+        vector<int> crossing_table(buffer.size(), 0);
+
+        for (size_t i = 0; i < buffer.size(); ++i) {
+            for (size_t j = i + 1; j < buffer.size(); ++j) {
+                int cross = cross_at(buffer[i], buffer[j]).size();
+                crossing_table[i] += cross;
+                crossing_table[j] += cross;
+            }
+        }
+
+        vector<net_info> reroute_list, noroute_list;
+        for (size_t i = 0; i < crossing_table.size(); ++i) {
+            if (crossing_table[i] == 0) {
+                noroute_list.push_back(buffer[i]);
+            }
+            else {
+                reroute_list.push_back(buffer[i]);
+            }
+        }
+
+        vector<net_info> rerouted = best_direct_connect_in_list(reroute_list);
+        data = rerouted;
+        data.insert(data.end(), noroute_list.begin(), noroute_list.end());
+    }
 }

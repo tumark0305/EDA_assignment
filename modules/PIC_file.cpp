@@ -33,37 +33,38 @@ bool PIC_file::read_fromfile(string input_file_name) {
 	return 0;
 }
 
-void PIC_file::new_line(string data) {
+void PIC_file::new_line(string new_line_data) {
 	vector<string> received_string;
-	if (data.find("grid") != string::npos) {
-		received_string = split(data);
+	if (new_line_data.find("grid") != string::npos) {
+		received_string = split(new_line_data);
 		grid[0] = stoi(received_string[1]);
 		grid[1] = stoi(received_string[2]);
 	}
-	else if (data.find("propagation") != string::npos) {
-		received_string = split(data);
+	else if (new_line_data.find("propagation") != string::npos) {
+		received_string = split(new_line_data);
 		propagation_loss = stoi(received_string[2]);
 	}
-	else if (data.find("crossing") != string::npos) {
-		received_string = split(data);
+	else if (new_line_data.find("crossing") != string::npos) {
+		received_string = split(new_line_data);
 		crossing_loss = stoi(received_string[2]);
 	}
-	else if (data.find("bending") != string::npos) {
-		received_string = split(data);
+	else if (new_line_data.find("bending") != string::npos) {
+		received_string = split(new_line_data);
 		bending_loss = stoi(received_string[2]);
 	}
-	else if (data.find("num") != string::npos) {
-		received_string = split(data);
+	else if (new_line_data.find("num") != string::npos) {
+		received_string = split(new_line_data);
 		num_net = stoi(received_string[2]);
 	}
-	else if (!data.empty() && std::isdigit(data[0])) {
+	else if (!new_line_data.empty() && std::isdigit(new_line_data[0])) {
 		net_info net;
-		received_string = split(data);
+		received_string = split(new_line_data);
 		net.id = stoi(received_string[0]);
 		net.pin_coordinate[0][0] = stoi(received_string[1]);
 		net.pin_coordinate[0][1] = stoi(received_string[2]);
 		net.pin_coordinate[1][0] = stoi(received_string[3]);
 		net.pin_coordinate[1][1] = stoi(received_string[4]);
+		data.push_back(net);
 	}
 }
 
@@ -89,4 +90,39 @@ vector<string> PIC_file::split(string input_word) {
 		}
 	}
 	return output;
+}
+
+void PIC_file::write_tofile(string output_file_name) {
+	std::ostringstream oss;
+	string output_path = current_path + "/" + output_file_name;
+	std::ofstream file(output_path);
+
+	if (!file) {
+		std::cerr << "cannot open file" << std::endl;
+		return;
+	}
+
+	for (size_t i = 0; i < data.size(); ++i) {
+		oss << data[i].id << " " << data[i].line_strip.size() << "\n";
+		for (size_t j = 0; j < data[i].line_strip.size(); ++j) {
+			const auto& seg = data[i].line_strip[j];
+			oss << seg[0][0] << " " << seg[0][1] << " "
+				<< seg[1][0] << " " << seg[1][1] << "\n";
+		}
+	}
+
+	std::string print_preview = oss.str();  // Àx¦s¿é¥X¹wÄý
+	file << print_preview;
+	file.close();
+	cout << print_preview << endl;
+}
+
+bool PIC_file::read_fromdata(vector<net_info> input_data) {
+	if (input_data.size() != 0) {
+		data = input_data;
+		return true;
+	}
+	else {
+		return false;
+	}
 }
