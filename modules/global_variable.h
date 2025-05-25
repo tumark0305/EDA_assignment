@@ -1,7 +1,9 @@
 #ifndef GLOBAL_VARIABLE_H 
 #define GLOBAL_VARIABLE_H 
+
 #include <iostream>
 #include <vector>
+#include <array>
 
 using namespace std;
 struct header_info {
@@ -42,4 +44,11 @@ struct data_info {
     vector<component_info> component;
     vector< specialnet_info> specialnet;
 };
+struct net_info {
+    int id = 0;
+    array<array<int, 2>, 2> pin_coordinate;
+    vector< array<int, 2>> line_coordinate;
+    vector<array<array<int, 2>, 2>> line_strip;
+};
+
 #endif

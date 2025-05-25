@@ -329,7 +329,7 @@ void def_file::write(string file_name) {
 	for (int i = 0; i < data_pack.component.size(); i++) {
 		component_info row = data_pack.component[i];
 		int coord[2] = { row.coordinate[0]  , row.coordinate[1] };
-		if (row.orientation == "FS") coord[1] += site_size[1];
+		//if (row.orientation == "FS") coord[1] += site_size[1];
 		file << "- "+ row .inst_name +" " + row.macro_name + "" << "\n";
 		file << "  + " + row.place + " ( " + to_string(coord[0]) + " " + to_string(coord[1]) + " ) " + row.orientation + " ;" << "\n";
 	}

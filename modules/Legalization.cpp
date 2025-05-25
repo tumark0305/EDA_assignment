@@ -232,11 +232,27 @@ legalization_controller::legalization_controller(def_file input_file, float _qua
 }
 
 void legalization_method::load_data(std::vector<BlockInfo> input_data) {
+	block_data_copy.clear();
 	for (const auto& blk : input_data) {
 		BlockInfo temp = blk;
-		block_data_copy0.push_back(temp);
+		block_data_copy.push_back(temp);
 	}
 	block_count = static_cast<unsigned int>(input_data.size());
+}
+
+bool legalization_controller::early_stop() {
+	high_resolution_clock::time_point now_time = high_resolution_clock::now();
+	running_time = static_cast<float>(duration_cast<milliseconds>(now_time - start_time).count()) / 1000.0f;
+	bool output = false;
+	if (result.back().legal && !stopped) {
+		stopped = true;
+	}
+	if (early_stop_after_step <= 0) {
+		output = true;
+	}
+	if (stopped) early_stop_after_step--;
+	if (running_time > 300) output = true;
+	return output;
 }
 
 bool legalization_controller::legal() {
@@ -274,26 +290,28 @@ bool legalization_controller::legal() {
 
 void legalization_controller::loss(string _method) {
 
-	loss_datapack_info loss_data_pack;
+	result_info loss_data_pack;
 	loss_data_pack.legal = legalization_controller::legal();
 
 	loss_data_pack.quality = legalization_controller::loss_quality_factor();
 
-	loss_datapack.push_back(loss_data_pack);
+	loss_data_pack.block_list = block_list;
+
+	result.push_back(loss_data_pack);
 	std::cout << "epoch:" << iter << "    legal: " << (loss_data_pack.legal ? "true " : "false")
 		<< "    , quality: " << loss_data_pack.quality << std::endl;
 
-	/*for (int i = 0; i < block_count; i++) {
-		std::cout << "x:" << block_list[i].coordinate[0] << "    ,y:" << block_list[i].coordinate[1] << std::endl;
-		std::cout << "newx:" << block_list[i].new_coordinate[0] << "    ,y:" << block_list[i].new_coordinate[1] << std::endl;
-	}*/
-	//cout << "output coord" << endl;
-		//for (const BlockInfo& block : placed) {
-		//	cout << "cooord=" << block.coordinate[0] << "," << block.coordinate[1] << endl;
-		//}
-		//cout << "end coord" << endl;
-
 	if (_method == "spring") {
+		method.single_spring();
+		if (block_count == method.output.size()) {
+			for (unsigned int i = 0; i < block_count; i++) {
+				block_list[i].step[0] = method.output[i][0];
+				block_list[i].step[1] = method.output[i][1];
+			}
+		}
+		else {
+			std::cerr << "method.output.size()=" << method.output.size() << "!=" << "block_count=" << block_count << std::endl;
+		}
 	}
 	else if (_method == "abacus") {
 		//method.single_abacus(); 
@@ -316,9 +334,8 @@ float legalization_controller::loss_quality_factor() {
 	for (unsigned int i = 0; i < block_count; i++) {
 		component_info block_component = block_list[i].component_data;
 		int original_coord[2] = { block_component.coordinate[0] , block_component.coordinate[1] };
-		int new_coord[2] = { block_list[i].coordinate[0] * static_cast<int>(cell_width) ,block_list[i].coordinate[1] * static_cast<int>(cell_height) };
+		int new_coord[2] = { block_list[i].coordinate[0] * static_cast<int>(site_size[0]) ,block_list[i].coordinate[1] * static_cast<int>(site_size[1]) };
 		int global_vector[2] = { original_coord[0] - new_coord[0] ,original_coord[1] - new_coord[1] };
-
 		float length = static_cast<float>(std::sqrt(std::pow(global_vector[0], 2) + std::pow(global_vector[1], 2)));
 		if (length > max_value)max_value = length;
 		sum += length;
@@ -329,13 +346,28 @@ float legalization_controller::loss_quality_factor() {
 }
 
 data_info legalization_controller::convert_data_pack() {
+	result_info* best_result = nullptr;
+	float min_quality = std::numeric_limits<float>::infinity();
+
+	for (auto& res : result) {
+		if (res.legal && res.quality < min_quality) {
+			min_quality = res.quality;
+			best_result = &res;
+		}
+	}
+	if (best_result == nullptr) best_result = &result.back();
+
+	cout << "best quality=" << best_result->quality << endl;
+
+	std::vector<BlockInfo> best_list = best_result->block_list;
+
 	std::vector<component_info> output;
 	for (unsigned int idx = 0; idx < block_count; idx++) {
 		component_info new_component;
-		new_component.inst_name = block_list[idx].component_data.inst_name;
-		new_component.macro_name = block_list[idx].component_data.macro_name;
-		new_component.place = block_list[idx].component_data.place;
-		std::array<int, 2> coord = block_list[idx].site_to_coordiante(block_list[idx].coordinate);
+		new_component.inst_name = best_list[idx].component_data.inst_name;
+		new_component.macro_name = best_list[idx].component_data.macro_name;
+		new_component.place = best_list[idx].component_data.place;
+		std::array<int, 2> coord = best_list[idx].site_to_coordiante(best_list[idx].coordinate);
 		new_component.coordinate[0] = coord[0]; //x,y
 		new_component.coordinate[1] = coord[1]; //x,y
 		for (int row_idx = 0; row_idx < input_data_pack_save.command.size(); row_idx++) {
@@ -347,13 +379,6 @@ data_info legalization_controller::convert_data_pack() {
 	}
 	data_info data_output = input_data_pack_save;
 	data_output.component = output;
-	//std::cout << "inst_name-" << output[0].inst_name << std::endl;
-	//std::cout << "macro_name-" << output[0].macro_name << std::endl;
-	//std::cout << "place-" << output[0].place << std::endl;
-	//std::cout << "coordinate[0]-" << output[0].coordinate[0] << std::endl;
-	//std::cout << "coordinate[1]-" << output[0].coordinate[1] << std::endl;
-	//std::cout << "orientation-" << output[0].orientation << std::endl;
-	//
 	return data_output;
 }
 
@@ -377,14 +402,15 @@ void legalization_controller::forward(string _method) {
 	if (_method == "spring") {
 		for (unsigned int i = 0; i < block_count; i++) {
 			block_list[i].move();
+			method.load_data(block_list); 
 		}
 		legalization_controller::loss(_method);
 	}
 	else if (_method == "abacus") {
 		for (unsigned int i = 0; i < block_count; i++) {
 			block_list[i].teleport();
+			method.load_data(block_list);
 		}
-
 		legalization_controller::loss(_method);
 	}
 	iter++;
@@ -395,7 +421,7 @@ void legalization_method::single_abacus() { // return output
 	placed.clear();
 	std::vector<int> all_x_coord;
 	for (unsigned int i = 0; i < block_count; i++) {
-		all_x_coord.push_back(block_data_copy0[i].coordinate[0]);
+		all_x_coord.push_back(block_data_copy[i].coordinate[0]);
 	}
 	std::vector<int> sorted_indices(block_count);
 	std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
@@ -414,7 +440,7 @@ void legalization_method::single_abacus() { // return output
 		double min_cost = std::numeric_limits<double>::infinity();
 		for (unsigned int option_row = 0; option_row < BlockInfo_col; option_row++) {
 			loss_info cost;
-			abacus_cal_cost(block_data_copy0[idx], option_row, placed, cost, early_exit);
+			abacus_cal_cost(block_data_copy[idx], option_row, placed, cost, early_exit);
 			all_condition.emplace_back(std::move(cost.condition));
 			if (cost.loss < min_cost) {
 				min_cost = cost.loss;
@@ -428,7 +454,7 @@ void legalization_method::single_abacus() { // return output
 	}
 	vector<BlockInfo> unpacked = unpack_combined(placed);
 	output.clear();
-	for (const auto& _block_orig : block_data_copy0) {
+	for (const auto& _block_orig : block_data_copy) {
 		for (const auto& _block_data : unpacked) {
 			if (_block_orig.tag == _block_data.tag) {
 				output.push_back(_block_data.coordinate);
@@ -584,7 +610,7 @@ void legalization_method::muti_abacus() { // return output
 	placed.clear();
 	std::vector<int> all_x_coord;
 	for (unsigned int i = 0; i < block_count; i++) {
-		all_x_coord.push_back(block_data_copy0[i].coordinate[0]);
+		all_x_coord.push_back(block_data_copy[i].coordinate[0]);
 	}
 	std::vector<int> sorted_indices(block_count);
 	std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
@@ -604,7 +630,7 @@ void legalization_method::muti_abacus() { // return output
 #pragma omp parallel for shared(early_exit)
 		for (int option_row = 0; option_row < static_cast<int>(BlockInfo_col); option_row++) {
 			if (early_exit.load()) continue;
-			abacus_cal_cost(block_data_copy0[idx], option_row, placed, loss_result[option_row], early_exit);
+			abacus_cal_cost(block_data_copy[idx], option_row, placed, loss_result[option_row], early_exit);
 			if (loss_result[option_row].loss == 0.0f) {
 				early_exit.store(true);
 				zero_atrow = option_row;
@@ -633,7 +659,7 @@ void legalization_method::muti_abacus() { // return output
 
 	std::vector<BlockInfo> unpacked = unpack_combined(placed);
 	output.clear();
-	for (const auto& _block_orig : block_data_copy0) {
+	for (const auto& _block_orig : block_data_copy) {
 		for (const auto& _block_data : unpacked) {
 			if (_block_orig.tag == _block_data.tag) {
 				output.push_back(_block_data.coordinate);
@@ -642,3 +668,56 @@ void legalization_method::muti_abacus() { // return output
 		}
 	}
 }
+
+void legalization_method::single_spring() {
+	std::vector<std::array<int, 2>> sum_force(block_data_copy.size(), { 0, 0 });
+
+	for (size_t a = 0; a < block_data_copy.size(); ++a) {
+		for (size_t b = a + 1; b < block_data_copy.size(); ++b) {
+			std::array<int, 2> overlap_size = overlap(block_data_copy[a], block_data_copy[b]);
+			if (overlap_size[0] > 0 && overlap_size[1] > 0) {
+				std::array<int, 2> spring_force = {
+					static_cast<int>(std::ceil(overlap_size[0] / 2.0)),
+					static_cast<int>(std::ceil(overlap_size[1] / 2.0))
+				};
+				std::array<int, 2> min_force = spring_force;
+
+				double rand_val = static_cast<double>(rand()) / RAND_MAX;
+				if (rand_val < 0.9) {
+					if (spring_force[0] > spring_force[1]) {
+						min_force[0] = 0;
+					}
+					else if (spring_force[0] < spring_force[1]) {
+						min_force[1] = 0;
+					}
+				}
+				else {
+					if (spring_force[0] > spring_force[1]) {
+						min_force[1] = 0;
+					}
+					else if (spring_force[0] < spring_force[1]) {
+						min_force[0] = 0;
+					}
+					else {
+						min_force[1] = 0;
+					}
+				}
+
+				rand_val = static_cast<double>(rand()) / RAND_MAX;
+				if (rand_val < 0.7) {
+					sum_force[a][0] += min_force[0];
+					sum_force[a][1] += min_force[1];
+				}
+				else {
+					sum_force[b][0] -= min_force[0];
+					sum_force[b][1] -= min_force[1];
+				}
+			}
+		}
+	}
+	output.clear();
+	for (size_t i = 0; i < block_data_copy.size(); ++i) {
+		output.push_back(sum_force[i]);
+	}
+}
+

@@ -7,6 +7,7 @@
 #include "modules/os_info.h"
 #include "modules/def_file.h"
 #include "modules/Legalization.h"
+#include "modules/PIC.h"
 
 
 #include <iostream>

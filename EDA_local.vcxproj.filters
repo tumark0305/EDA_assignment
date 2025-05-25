@@ -60,6 +60,12 @@
     <ClInclude Include="modules\tqdm.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="modules\PIC.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\PIC_file.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="macro.cpp">
@@ -78,6 +84,12 @@
       <Filter>來源檔案</Filter>
     </ClCompile>
     <ClCompile Include="modules\tqdm.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\PIC.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\PIC_file.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
   </ItemGroup>

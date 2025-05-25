@@ -12,11 +12,9 @@
 #include <limits>
 #include <thread>
 #include <mutex>
+#include <chrono>
 
-struct loss_datapack_info {
-    float quality = 9999.0;
-    bool legal = false;
-};
+using namespace std::chrono;
 extern unsigned int BlockInfo_col;
 extern unsigned int BlockInfo_row;
 
@@ -50,6 +48,11 @@ public:
 };
 bool operator==(const BlockInfo& a, const BlockInfo& b);
 
+struct result_info {
+    float quality = 9999.0;
+    bool legal = false;
+    std::vector< BlockInfo> block_list;
+};
 struct loss_info {
     double loss = 0.0;
     std::vector< BlockInfo> condition;
@@ -58,7 +61,7 @@ struct loss_info {
 class legalization_method {
 private:
     std::vector< BlockInfo> placed; 
-    std::vector<BlockInfo> block_data_copy0;
+    std::vector<BlockInfo> block_data_copy;
     double abacus_max_loss = 0.0;
     unsigned int block_count = 0;
     void cal_complex_loss(BlockInfo& now_block, std::vector< BlockInfo>& placed_mirror0 , loss_info& output, std::atomic<bool>& early_stop );
@@ -71,25 +74,31 @@ public:
     void load_data(std::vector<BlockInfo> input_data);
     void single_abacus();
     void muti_abacus();
+    void single_spring();
     std::vector<std::array<int, 2>> output;
 };
 
 class legalization_controller {
 private:
+    int early_stop_after_step = 10;
+    bool stopped = false;
     unsigned int iter = 0;
     data_info input_data_pack_save;
     legalization_method method;
     std::array<int, 2> site_size = { 0,0 };
-    std::vector<loss_datapack_info> loss_datapack;
+    std::vector<result_info> result;
     unsigned int block_count = 0;
     std::vector<BlockInfo> block_list;
     float quality_alpha;
     unsigned int cell_width;
     unsigned int cell_height;
+    high_resolution_clock::time_point start_time = high_resolution_clock::now();
 public:
+    float running_time = 0;
     legalization_controller(def_file input_file, float _quality_alpha, unsigned int _cell_width, unsigned int _cell_height);
     void forward(string _method);
     void loss(string _method);
+    bool early_stop();
     bool legal();
     float loss_quality_factor();
     data_info convert_data_pack(); 
