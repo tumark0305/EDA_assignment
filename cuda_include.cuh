@@ -14,8 +14,13 @@
 #include <curand_kernel.h>
 
 using namespace std;
-vector<array<int, 2>> spring_cuda(vector< BlockInfo>& block_list_input);
-bool no_overlap_cuda(vector<BlockInfo>& block_list_input);
+std::vector<int> evaluate_crossing_cuda(
+	std::vector<int>& option_flat,
+	std::vector<int>& option_lengths,
+	std::vector<int>& option_offsets,
+	int N,
+	int max_path_len
+);
 extern cudaError_t cudaStatus;
 class GPU_info {
 private:

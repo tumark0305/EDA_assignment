@@ -7,7 +7,7 @@ SRC_CPP = *.cpp modules/*.cpp
 
 OBJ_CUDA = cuda_main.o cuda_macro.o
 OBJ_CPP = *.cpp modules/*.cpp
-OUTPUT = legalizer
+OUTPUT = picRouting
 
 all: $(OUTPUT)
 $(OBJ_CUDA): %.o: %.cu

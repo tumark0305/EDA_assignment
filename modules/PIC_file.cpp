@@ -114,7 +114,7 @@ void PIC_file::write_tofile(string output_file_name) {
 	std::string print_preview = oss.str();  // Àx¦s¿é¥X¹wÄý
 	file << print_preview;
 	file.close();
-	cout << print_preview << endl;
+	//cout << print_preview << endl;
 }
 
 bool PIC_file::read_fromdata(vector<net_info> input_data) {

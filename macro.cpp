@@ -1,6 +1,6 @@
 #include "include.h"
 bool get_parameters(int argc, char* argv[]) {
-    if (argc != 5) {
+    if (argc != 3) {
         cerr << "Usage: " << argv[0] << " <input file> <output file>" << endl;
         return true;
     }

@@ -1,10 +1,11 @@
-#include "PIC.h"
+ï»¿#include "PIC.h"
 
-#define solve_limit 25
+#define solve_limit 100
 
-PIC::PIC(PIC_file input) {
+PIC::PIC(PIC_file input, bool use_cuda_bool) {
 	header = input;
 	data = input.data;
+    use_cuda = use_cuda_bool;
 }
 
 vector<array<int, 2>> PIC::cross_at(const net_info& pina, const net_info& pinb) {
@@ -34,6 +35,9 @@ vector<array<int, 2>> PIC::cross_at(const net_info& pina, const net_info& pinb) 
 }
 
 vector<vector<array<int, 2>>> PIC::direct_connection(const array<array<int, 2>, 2>& pin_location) {
+    auto norm = [](const array<int, 2>& a, const array<int, 2>& b) -> double {
+        return sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2));
+        };
     vector<vector<array<int, 2>>> output(2);
 
     int x0 = pin_location[0][0];
@@ -62,7 +66,7 @@ vector<vector<array<int, 2>>> PIC::direct_connection(const array<array<int, 2>, 
         Lver.push_back({ xmin, y });
     }
 
-    // ­Y°_ÂI¦b¥kÃä¡A¤ÏÂà¤ô¥­¤è¦V¡F¦b¤W¤è«h¤ÏÂà««ª½¤è¦V
+    // è‹¥èµ·é»žåœ¨å³é‚Šï¼Œåè½‰æ°´å¹³æ–¹å‘ï¼›åœ¨ä¸Šæ–¹å‰‡åè½‰åž‚ç›´æ–¹å‘
     if (x0 > x1) {
         reverse(Dhor.begin(), Dhor.end());
         reverse(Thor.begin(), Thor.end());
@@ -71,15 +75,41 @@ vector<vector<array<int, 2>>> PIC::direct_connection(const array<array<int, 2>, 
         reverse(Rver.begin(), Rver.end());
         reverse(Lver.begin(), Lver.end());
     }
-
-    if (Dhor.empty() || Rver.empty()) {
+    if (Dhor.empty()) {
         output[0] = Lver;
-        output[0].insert(output[0].end(), Thor.begin(), Thor.end());
+        output[1] = Rver;
 
-        output[1] = Dhor;
-        output[1].insert(output[1].end(), Rver.begin(), Rver.end());
+        if (!Lver.empty() && norm(Lver[0], pin_location[0]) > 1.0) {
+            output[0].insert(output[0].begin(), { Lver[0][0], pin_location[0][1] });
+        }
+        if (!Lver.empty() && norm(Lver.back(), pin_location[1]) > 1.0) {
+            output[0].push_back({ Lver[0][0], pin_location[1][1] });
+        }
+        if (!Rver.empty() && norm(Rver[0], pin_location[0]) > 1.0) {
+            output[1].insert(output[1].begin(), { Rver[0][0], pin_location[0][1] });
+        }
+        if (!Rver.empty() && norm(Rver.back(), pin_location[1]) > 1.0) {
+            output[1].push_back({ Rver[0][0], pin_location[1][1] });
+        }
     }
-    else {
+    if (Rver.empty()) {
+        output[0] = Thor;
+        output[1] = Dhor;
+
+        if (!Thor.empty() && norm(Thor[0], pin_location[0]) > 1.0) {
+            output[0].insert(output[0].begin(), { pin_location[0][0], Thor[0][1] });
+        }
+        if (!Thor.empty() && norm(Thor.back(), pin_location[1]) > 1.0) {
+            output[0].push_back({ pin_location[1][0], Thor[0][1] });
+        }
+        if (!Dhor.empty() && norm(Dhor[0], pin_location[0]) > 1.0) {
+            output[1].insert(output[1].begin(), { pin_location[0][0], Dhor[0][1] });
+        }
+        if (!Dhor.empty() && norm(Dhor.back(), pin_location[1]) > 1.0) {
+            output[1].push_back({ pin_location[1][0], Dhor[0][1] });
+        }
+    }
+    if(!(Dhor.empty() || Rver.empty())) {
         if (x0 == LD_point[0] && y0 == LD_point[1]) {
             output[0] = Lver;
             output[0].push_back(LT_point);
@@ -177,14 +207,14 @@ void PIC::convert_toline() {
     for (auto& pin : data) {
         pin.line_strip.clear();
 
-        array<int, 2> current_coordinate = pin.pin_coordinate[0];
-        array<int, 2> end_coordinate = pin.pin_coordinate[1];
+        array<int, 2> current_coordinate = pin.pin_coordinate[0]; 
+        array<int, 2> end_coordinate = pin.pin_coordinate[1]; 
 
         vector<array<int, 2>> connect_in = pin.line_coordinate;
         if (!(abs(connect_in[0][0] - current_coordinate[0]) <= 1 &&
             abs(connect_in[0][1] - current_coordinate[1]) <= 1)) {
-            current_coordinate = pin.pin_coordinate[1];
-            end_coordinate = pin.pin_coordinate[0];
+            current_coordinate = pin.pin_coordinate[1]; 
+            end_coordinate = pin.pin_coordinate[0]; 
         }
         connect_in.push_back(end_coordinate);
 
@@ -195,6 +225,7 @@ void PIC::convert_toline() {
         }
     }
 }
+
 
 double PIC::loss() {
     convert_toline();
@@ -286,7 +317,8 @@ vector<net_info> PIC::from_smallest_direct_connect_in_list(vector<net_info> pin_
 
 void PIC::direct_connect() {
     if (data.size() < solve_limit) { 
-        data = best_direct_connect_in_list(data);
+        if (use_cuda)  data = best_direct_connect_in_list_CUDA(data);
+        else data = best_direct_connect_in_list(data);
     }
     else {
         vector<net_info> buffer = from_smallest_direct_connect_in_list(data);
@@ -310,8 +342,54 @@ void PIC::direct_connect() {
             }
         }
 
-        vector<net_info> rerouted = best_direct_connect_in_list(reroute_list);
+        vector<net_info> rerouted;
+        if (use_cuda)  rerouted = best_direct_connect_in_list_CUDA(reroute_list);
+        else rerouted = best_direct_connect_in_list(reroute_list);
+
         data = rerouted;
         data.insert(data.end(), noroute_list.begin(), noroute_list.end());
     }
+}
+
+vector<net_info> PIC::best_direct_connect_in_list_CUDA(vector<net_info> pin_list) {
+    vector<net_info> output = pin_list;
+    vector<vector<vector<array<int, 2>>>> all_options;
+
+    for (const auto& net : pin_list) {
+        all_options.push_back(direct_connection(net.pin_coordinate));
+    }
+
+    size_t N = pin_list.size();
+    vector<int> option_flat;
+    vector<int> option_lengths;
+    vector<int> option_offsets;
+    int max_path_len = 0;
+
+    for (const auto& options : all_options) {
+        for (const auto& path : options) {
+            option_offsets.push_back(option_flat.size());
+            option_lengths.push_back((path.size() - 1) * 4);
+            max_path_len = max(max_path_len, (int)(path.size() - 1) * 4);
+
+            for (size_t i = 1; i < path.size(); ++i) {
+                option_flat.push_back(path[i - 1][0]); // x1
+                option_flat.push_back(path[i - 1][1]); // y1
+                option_flat.push_back(path[i][0]);     // x2
+                option_flat.push_back(path[i][1]);     // y2
+            }
+        }
+    }
+
+    vector<int> cross_counts = evaluate_crossing_cuda(
+        option_flat, option_lengths, option_offsets,
+        static_cast<int>(N), max_path_len
+    );
+
+    int best_selector = min_element(cross_counts.begin(), cross_counts.end()) - cross_counts.begin();
+
+    for (size_t i = 0; i < N; ++i) {
+        int opt = (best_selector >> i) & 1;
+        output[i].line_coordinate = all_options[i][opt];
+    }
+    return output;
 }
